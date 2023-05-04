@@ -43,6 +43,9 @@ def _parse_arguments(desc, args):
                              'locations,n_location\n'
                              'HPA040086,ENSG00000094914,AAAS,U-2 OS,'
                              'Nuclear membrane,1')
+    parser.add_argument('--provenance',
+                        help='Path to file containing provenance '
+                             'information about input files in JSON format')
     parser.add_argument('--image_url', default='https://images.proteinatlas.org',
                         help='Base URL for downloading IF images')
     parser.add_argument('--poolsize', type=int,
@@ -97,7 +100,7 @@ def main(args):
     (https://www.proteinatlas.org/)
     
     To use pass in a CSV file containing links to the images to download
-    from HPA via --csv flag
+    from HPA via --samples flag
     
     Format of CSV file:
     
@@ -110,6 +113,8 @@ def main(args):
     <NAME>_color.jpg 
     
     Example: 1_A1_1_blue.jpg
+    
+    The --unique flag should be given a 
 
     """.format(version=cellmaps_imagedownloader.__version__)
     theargs = _parse_arguments(desc, args[1:])
