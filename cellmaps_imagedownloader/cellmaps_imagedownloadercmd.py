@@ -61,6 +61,8 @@ def _parse_arguments(desc, args):
     parser.add_argument('--skip_existing', action='store_true',
                         help='If set, skips download if image already exists and '
                              'has size greater then 0 bytes')
+    parser.add_argument('--skip_failed', action='store_true',
+                        help='If set, ignores images that failed to download after retries')
     parser.add_argument('--logconf', default=None,
                         help='Path to python logging configuration file in '
                              'this format: https://docs.python.org/3/library/'
@@ -178,7 +180,8 @@ Additional optional fields for registering datasets include
                                        image_url=theargs.image_url,
                                        skip_logging=theargs.skip_logging,
                                        input_data_dict=theargs.__dict__,
-                                       provenance=json_prov).run()
+                                       provenance=json_prov,
+                                       skip_failed=theargs.skip_failed).run()
     except Exception as e:
         logger.exception('Caught exception: ' + str(e))
         return 2

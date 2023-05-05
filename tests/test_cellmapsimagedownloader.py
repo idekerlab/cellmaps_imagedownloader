@@ -13,6 +13,7 @@ from unittest.mock import Mock
 import json
 import cellmaps_imagedownloader
 from cellmaps_imagedownloader.exceptions import CellMapsImageDownloaderError
+from cellmaps_utils.exceptions import CellMapsProvenanceError
 from cellmaps_imagedownloader.runner import CellmapsImageDownloader
 from cellmaps_imagedownloader.runner import ImageDownloader
 from cellmaps_imagedownloader.gene import ImageGeneNodeAttributeGenerator

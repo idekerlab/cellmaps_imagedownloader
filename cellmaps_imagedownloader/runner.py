@@ -13,6 +13,7 @@ from datetime import date
 import json
 from tqdm import tqdm
 from cellmaps_utils import logutils
+from cellmaps_utils.provenance import ProvenanceUtil
 import cellmaps_imagedownloader
 from cellmaps_imagedownloader.exceptions import CellMapsImageDownloaderError
 
@@ -186,7 +187,9 @@ class CellmapsImageDownloader(object):
                  image_url=None,
                  skip_logging=False,
                  provenance=None,
-                 input_data_dict=None):
+                 input_data_dict=None,
+                 provenance_utils=ProvenanceUtil(),
+                 skip_failed=False):
         """
         Constructor
 
@@ -226,6 +229,8 @@ class CellmapsImageDownloader(object):
         self._unique_datasetid = None
         self._softwareid = None
         self._image_gene_attrid = None
+        self._provenance_utils = provenance_utils
+        self.skip_failed = skip_failed
 
     @staticmethod
     def get_example_provenance(requiredonly=True,
@@ -247,23 +252,12 @@ class CellmapsImageDownloader(object):
         base_dict = {'organization-name': 'Name of organization',
                      'project-name': 'Name of project'}
         if with_ids is not None and with_ids is True:
-            base_dict.update({'samples_file': {'guid': 'ID of dataset'},
-                              'unique_file': {'guid': 'ID of dataset'}})
+            guid_dict = ProvenanceUtil.example_dataset_provenance(with_ids=with_ids)
+            base_dict.update({'samples_file': guid_dict,
+                              'unique_file': guid_dict})
             return base_dict
 
-        field_dict = {'name': 'Name of dataset',
-                      'author': 'Author of dataset',
-                      'version': 'Version of dataset',
-                      'date-published': 'Date dataset was published',
-                      'description': 'Description of dataset',
-                      'data-format': 'Format of data'}
-
-        if requiredonly is None or requiredonly is False:
-            field_dict.update({'url': 'URL of datset',
-                               'used-by': '?',
-                               'derived-from': '?',
-                               'associated-publication': '?',
-                               'additional-documentation': '?'})
+        field_dict = ProvenanceUtil.example_dataset_provenance(requiredonly=requiredonly)
 
         base_dict.update({'samples_file': field_dict,
                           'unique_file': field_dict})
@@ -287,61 +281,34 @@ class CellmapsImageDownloader(object):
             else:
                 logger.debug(cdir + ' already exists')
 
-    def _run_cmd(self, cmd):
-        """
-        Runs hidef command as a command line process
-        :param cmd_to_run: command to run as list
-        :type cmd_to_run: list
-        :return: (return code, standard out, standard error)
-        :rtype: tuple
-        """
-        logger.debug('Running command: ' + str(cmd))
-        p = subprocess.Popen(cmd,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.PIPE)
-
-        out, err = p.communicate()
-
-        return p.returncode, out, err
-
     def _register_software(self):
         """
         Registers this tool
 
-        :return:
+        :raises CellMapsProvenanceError: If fairscape call fails
         """
-        cmd = ['fairscape-cli', 'rocrate', 'add', 'software',
-               '--name', cellmaps_imagedownloader.__name__,
-               '--description', cellmaps_imagedownloader.__description__,
-               '--author', cellmaps_imagedownloader.__author__,
-               '--version', cellmaps_imagedownloader.__version__,
-               '--file-format', '.py',
-               '--url', cellmaps_imagedownloader.__repo_url__,
-               self._outdir]
-        exit_code, out_str, err_str = self._run_cmd(cmd)
-
-        logger.debug('add dataset exit code: ' + str(exit_code))
-        if exit_code != 0:
-            raise CellMapsImageDownloaderError('Error adding dataset: ' +
-                                               str(out_str) + ' : ' + str(err_str))
-        logger.debug('add data set out_str: ' + str(out_str))
-        logger.debug('add data set err_str: ' + str(err_str))
-        self._softwareid = out_str
+        self._softwareid = self._provenance_utils.register_software(self._outdir,
+                                                                    name=cellmaps_imagedownloader.__name__,
+                                                                    description=cellmaps_imagedownloader.__description__,
+                                                                    author=cellmaps_imagedownloader.__author__,
+                                                                    version=cellmaps_imagedownloader.__version__,
+                                                                    file_format='.py',
+                                                                    url=cellmaps_imagedownloader.__repo_url__)
 
     def _register_image_gene_node_attrs(self):
         """
         Registers image_gene_node_attributes.tsv file with create as a dataset
 
         """
-
-        self._image_gene_attrid = self._add_dataset_to_crate(crate_path=self._outdir,
-                                   source_file=self.get_image_gene_node_attributes_file(),
-                                   data_dict={'name': cellmaps_imagedownloader.__name__ + ' output file',
-                                              'description': 'Image gene node attributes file',
-                                              'data-format': 'tsv',
-                                              'author': '',
-                                              'version': cellmaps_imagedownloader.__version__,
-                                              'date-published': date.today().strftime('%m-%d-%Y')})
+        data_dict = {'name': cellmaps_imagedownloader.__name__ + ' output file',
+                     'description': 'Image gene node attributes file',
+                     'data-format': 'tsv',
+                     'author': '',
+                     'version': cellmaps_imagedownloader.__version__,
+                     'date-published': date.today().strftime('%m-%d-%Y')}
+        self._image_gene_attrid = self._provenance_utils.register_dataset(self._outdir,
+                                                                          source_file=self.get_image_gene_node_attributes_file(),
+                                                                          data_dict=data_dict)
 
     def _add_dataset_to_crate(self, crate_path=None, data_dict=None,
                               source_file=None, skip_copy=True):
@@ -351,75 +318,40 @@ class CellmapsImageDownloader(object):
         :param data_dict:
         :return:
         """
-        cmd = ['fairscape-cli', 'rocrate', 'add', 'dataset',
-               '--name', data_dict['name'],
-               '--version', data_dict['version'],
-               '--data-format', data_dict['data-format'],
-               '--description', data_dict['description'],
-               '--date-published', data_dict['date-published'],
-               '--author', data_dict['author'],
-               '--source-filepath', source_file]
-        if skip_copy is not None and skip_copy is False:
-            cmd.append('--destination-filepath')
-            cmd.append(os.path.join(crate_path,
-                                    os.path.basename(source_file)))
-        cmd.append(crate_path)
-        exit_code, out_str, err_str = self._run_cmd(cmd)
-        logger.debug('add dataset exit code: ' + str(exit_code))
-        if exit_code != 0:
-            raise CellMapsImageDownloaderError('Error adding dataset: ' +
-                                               str(out_str) + ' : ' + str(err_str))
-        logger.debug('add data set out_str: ' + str(out_str))
-        logger.debug('add data set err_str: ' + str(err_str))
-        return out_str
+        return self._provenance_utils.register_dataset(self._outdir,
+                                                       source_file=source_file,
+                                                       data_dict=data_dict,
+                                                       skip_copy=skip_copy)
 
     def _register_computation(self):
         """
 
         :return:
         """
-        cmd = ['fairscape-cli', 'rocrate', 'add', 'computation',
-               '--name', cellmaps_imagedownloader.__name__ + ' computation',
-               '--author', '',
-               '--run-by', '',
-               '--command', '',
-               '--description', 'run of ' + cellmaps_imagedownloader.__name__,
-               '--used-software', self._softwareid,
-               '--used-dataset', self._unique_datasetid,
-               '--used-dataset', self._samples_datasetid,
-               '--generated', self._image_gene_attrid,
-               self._outdir]
-        exit_code, out_str, err_str = self._run_cmd(cmd)
-        logger.debug('add dataset exit code: ' + str(exit_code))
-        if exit_code != 0:
-            raise CellMapsImageDownloaderError('Error adding dataset: ' +
-                                               str(out_str) + ' : ' + str(err_str))
-        logger.debug('add data set out_str: ' + str(out_str))
-        logger.debug('add data set err_str: ' + str(err_str))
+        self._provenance_utils.register_computation(self._outdir,
+                                                    name=cellmaps_imagedownloader.__name__ + ' computation',
+                                                    run_by=str(os.getlogin()),
+                                                    command=str(self._input_data_dict),
+                                                    description='run of ' + cellmaps_imagedownloader.__name__,
+                                                    used_software=[self._softwareid],
+                                                    used_dataset=[self._unique_datasetid, self._samples_datasetid],
+                                                    generated=[self._image_gene_attrid])
 
     def _create_run_crate(self):
         """
+        Creates rocrate for output directory
 
-        :return:
+        :raises CellMapsProvenanceError: If there is an error
         """
-        # create rocrate
         try:
-            cmd = ['fairscape-cli', 'rocrate', 'create',
-                   '--name', 'cellmaps_imagedownloader',
-                   '--organization-name', self._provenance['organization-name'],
-                   '--project-name', self._provenance['project-name'],
-                   os.path.abspath(self._outdir)]
+            self._provenance_utils.register_rocrate(self._outdir,
+                                                    name='cellmaps_imagedownloader',
+                                                    organization_name=self._provenance['organization-name'],
+                                                    project_name=self._provenance['project-name'])
         except TypeError as te:
             raise CellMapsImageDownloaderError('Invalid provenance: ' + str(te))
         except KeyError as ke:
-            raise CellMapsImageDownloaderError('Provenance data malformed: ' + str(ke))
-        exit_code, out_str, err_str = self._run_cmd(cmd)
-        logger.debug('creation of crate stdout: ' + str(out_str))
-        logger.debug('creation of crate stdout: ' + str(err_str))
-        logger.debug('creation of crate exit code: ' + str(exit_code))
-        if exit_code != 0:
-            raise CellMapsImageDownloaderError('Error creating crate: ' +
-                                               str(out_str) + ' : ' + str(err_str))
+            raise CellMapsImageDownloaderError('Key missing in provenance: ' + str(ke))
 
     def _register_input_datasets(self):
         """
@@ -554,7 +486,7 @@ class CellmapsImageDownloader(object):
             # try one more time with files that failed
             failed_downloads = self._retry_failed_images(failed_downloads=failed_downloads)
 
-        if len(failed_downloads) > 0:
+        if len(failed_downloads) > 0 and (self._skip_failed is None or self._skip_failed is False):
             raise CellMapsImageDownloaderError('Failed to download: ' +
                                                str(len(failed_downloads)) + ' images')
         return 0
