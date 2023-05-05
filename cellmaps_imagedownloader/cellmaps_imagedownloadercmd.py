@@ -4,6 +4,7 @@ import argparse
 import sys
 import logging
 import logging.config
+import json
 
 from cellmaps_utils import logutils
 from cellmaps_utils import constants
@@ -45,7 +46,9 @@ def _parse_arguments(desc, args):
                              'Nuclear membrane,1')
     parser.add_argument('--provenance',
                         help='Path to file containing provenance '
-                             'information about input files in JSON format')
+                             'information about input files in JSON format. '
+                             'This is required and not including will output '
+                             'and error message with example of file')
     parser.add_argument('--image_url', default='https://images.proteinatlas.org',
                         help='Base URL for downloading IF images')
     parser.add_argument('--poolsize', type=int,
@@ -93,36 +96,77 @@ def main(args):
              or ``2`` if an exception is raised
     :rtype: int
     """
+    withguids_json = json.dumps(CellmapsImageDownloader.get_example_provenance(with_ids=True), indent=2)
+    register_json = json.dumps(CellmapsImageDownloader.get_example_provenance(), indent=2)
+
     desc = """
-    Version {version}
+Version {version}
 
-    Downloads immunofluorescent labeled images from the Human Protein Atlas
-    (https://www.proteinatlas.org/)
-    
-    To use pass in a CSV file containing links to the images to download
-    from HPA via --samples flag
-    
-    Format of CSV file:
-    
-    filename,if_plate_id,position,sample,status,locations,antibody,ensembl_ids,gene_names
-    /archive/1/1_A1_1_,1,A1,1,35,Golgi apparatus,HPA000992,ENSG00000066455,GOLGA5
-    
-    The downloaded images are stored under the output directory
-    specified on the command line in color specific directories
-    (red, blue, green, yellow) with name format of: 
-    <NAME>_color.jpg 
-    
-    Example: 1_A1_1_blue.jpg
-    
-    The --unique flag should be given a 
+Downloads immunofluorescent labeled images from the Human Protein Atlas
+(https://www.proteinatlas.org/)
 
-    """.format(version=cellmaps_imagedownloader.__version__)
+To use pass in a CSV file containing links to the images to download
+from HPA via --samples flag
+
+Format of CSV file:
+
+filename,if_plate_id,position,sample,status,locations,antibody,ensembl_ids,gene_names
+/archive/1/1_A1_1_,1,A1,1,35,Golgi apparatus,HPA000992,ENSG00000066455,GOLGA5
+
+The downloaded images are stored under the output directory
+specified on the command line in color specific directories
+(red, blue, green, yellow) with name format of: 
+<NAME>_color.jpg 
+
+Example: 1_A1_1_blue.jpg
+
+The --unique flag should be given a CSF file containing best or desired antibodies to 
+use. 
+
+Format of CSV file:
+
+antibody,ensembl_ids,gene_names,atlas_name,locations,n_location
+HPA040086,ENSG00000094914,AAAS,U-2 OS,Nuclear membrane,1
+
+In addition, the --provenance flag is required and must be set to a path 
+to a JSON file. 
+
+If datasets are already registered with FAIRSCAPE then the following is sufficient:
+
+{withguids}
+
+If datasets are NOT registered, then the following is required:
+
+{register}
+
+Additional optional fields for registering datasets include 
+'url', 'used-by', 'associated-publication', and 'additional-documentation'
+    
+
+    """.format(version=cellmaps_imagedownloader.__version__,
+               withguids=withguids_json,
+               register=register_json)
     theargs = _parse_arguments(desc, args[1:])
     theargs.program = args[0]
     theargs.version = cellmaps_imagedownloader.__version__
 
     try:
         logutils.setup_cmd_logging(theargs)
+        if theargs.provenance is None:
+            sys.stderr.write('\n\n--provenance flag is required to run this tool. '
+                             'Please pass '
+                             'a path to a JSON file with the following data:\n\n')
+            sys.stderr.write('If datasets are already registered with '
+                             'FAIRSCAPE then the following is sufficient:\n\n')
+            sys.stderr.write(withguids_json + '\n\n')
+            sys.stderr.write('If datasets are NOT registered, then the following is required:\n\n')
+            sys.stderr.write(register_json + '\n\n')
+            return 1
+
+        # load the provenance as a dict
+        with open(theargs.provenance, 'r') as f:
+            json_prov = json.load(f)
+
         imagegen = ImageGeneNodeAttributeGenerator(unique_list=ImageGeneNodeAttributeGenerator.get_unique_list_from_csvfile(theargs.unique),
                                                    samples_list=ImageGeneNodeAttributeGenerator.get_samples_from_csvfile(theargs.samples))
         dloader = MultiProcessImageDownloader(poolsize=theargs.poolsize,
@@ -133,7 +177,8 @@ def main(args):
                                        imagegen=imagegen,
                                        image_url=theargs.image_url,
                                        skip_logging=theargs.skip_logging,
-                                       misc_info_dict=theargs.__dict__).run()
+                                       input_data_dict=theargs.__dict__,
+                                       provenance=json_prov).run()
     except Exception as e:
         logger.exception('Caught exception: ' + str(e))
         return 2

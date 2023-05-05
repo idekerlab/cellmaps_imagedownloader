@@ -30,17 +30,22 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
 
     def test_constructor(self):
         """Tests constructor"""
-        myobj = CellmapsImageDownloader()
+        myobj = CellmapsImageDownloader(outdir='foo')
         self.assertIsNotNone(myobj)
 
     def test_run(self):
         """ Tests run()"""
-        myobj = CellmapsImageDownloader()
+        temp_dir = tempfile.mkdtemp()
         try:
-            myobj.run()
-            self.fail('Expected CellMapsImageDownloaderError')
-        except CellMapsImageDownloaderError as c:
-            self.assertTrue('Output directory is None' in str(c))
+            run_dir = os.path.join(temp_dir, 'run')
+            myobj = CellmapsImageDownloader(outdir=run_dir)
+            try:
+                myobj.run()
+                self.fail('Expected CellMapsImageDownloaderError')
+            except CellMapsImageDownloaderError as c:
+                self.assertTrue('Invalid provenance' in str(c))
+        finally:
+            shutil.rmtree(temp_dir)
 
     def test_download_file(self):
         temp_dir = tempfile.mkdtemp()
@@ -122,25 +127,36 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
 
     def test_create_output_directory(self):
         temp_dir = tempfile.mkdtemp()
+
+        # fail if directory already exists
         try:
             crunner = CellmapsImageDownloader(outdir=temp_dir)
             crunner._create_output_directory()
+            self.fail('Expected exception')
+        except CellMapsImageDownloaderError as ce:
+            self.assertTrue(' already exists' in str(ce))
+
+        try:
+            run_dir = os.path.join(temp_dir, 'run')
+            crunner = CellmapsImageDownloader(outdir=run_dir)
+            crunner._create_output_directory()
             for c in CellmapsImageDownloader.COLORS:
-                self.assertTrue(os.path.isdir(os.path.join(temp_dir, c)))
+                self.assertTrue(os.path.isdir(os.path.join(run_dir, c)))
         finally:
             shutil.rmtree(temp_dir)
 
     def test_write_task_start_json(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            crunner = CellmapsImageDownloader(outdir=temp_dir)
+            run_dir = os.path.join(temp_dir, 'run')
+            crunner = CellmapsImageDownloader(outdir=run_dir)
             crunner._create_output_directory()
             crunner._write_task_start_json()
             start_file = None
-            for entry in os.listdir(temp_dir):
+            for entry in os.listdir(run_dir):
                 if not entry.endswith('_start.json'):
                     continue
-                start_file = os.path.join(temp_dir, entry)
+                start_file = os.path.join(run_dir, entry)
             self.assertIsNotNone(start_file)
 
             with open(start_file, 'r') as f:
@@ -149,7 +165,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
             self.assertEqual(cellmaps_imagedownloader.__version__,
                              data['version'])
             self.assertTrue(data['start_time'] > 0)
-            self.assertEqual(temp_dir, data['outdir'])
+            self.assertEqual(run_dir, data['outdir'])
         finally:
             shutil.rmtree(temp_dir)
 

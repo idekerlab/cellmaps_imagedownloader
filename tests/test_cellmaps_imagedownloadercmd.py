@@ -45,6 +45,6 @@ class TestCellmapsDownloader(unittest.TestCase):
         try:
             temp_dir = tempfile.mkdtemp()
             res = cellmaps_imagedownloadercmd.main(['myprog.py', temp_dir])
-            self.assertEqual(res, 2)
+            self.assertEqual(res, 1)
         finally:
             shutil.rmtree(temp_dir)
