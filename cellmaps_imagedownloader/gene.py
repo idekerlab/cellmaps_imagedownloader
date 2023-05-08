@@ -3,6 +3,8 @@ import re
 import csv
 import mygene
 import logging
+from tqdm import tqdm
+
 from cellmaps_imagedownloader.exceptions import CellMapsImageDownloaderError
 
 logger = logging.getLogger(__name__)
@@ -326,18 +328,25 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
 
         :return:
         """
+        t = tqdm(total=5, desc='Get updated gene symbols',
+                 unit='steps')
+
+        t.update()
         # get the unique set of ensembl_ids for mygene query
         ensembl_id_list, _ = self._get_unique_ids_from_samplelist()
 
+        t.update()
         query_res = self._genequery.get_symbols_for_genes(genelist=ensembl_id_list,
                                                           scopes='ensembl.gene')
-
+        t.update()
         # get mapping of ambiguous genes
         _, ambiguous_gene_dict = self._get_unique_ids_from_samplelist(column='gene_names')
 
+        t.update()
         # get the unique or best antibodies to use
         unique_antibodies = self._get_set_of_antibodies_from_unique_list()
 
+        t.update()
         # create a mapping of ensembl id to antibody and ensembl_id to filenames
         # where entries NOT in unique_antibodies are filtered out
         g_antibody_dict, g_filename_dict = self.get_dicts_of_gene_to_antibody_filename(allowed_antibodies=unique_antibodies)

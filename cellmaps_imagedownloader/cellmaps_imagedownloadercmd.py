@@ -10,6 +10,7 @@ from cellmaps_utils import logutils
 from cellmaps_utils import constants
 import cellmaps_imagedownloader
 from cellmaps_imagedownloader.runner import MultiProcessImageDownloader
+from cellmaps_imagedownloader.runner import FakeImageDownloader
 from cellmaps_imagedownloader.runner import CellmapsImageDownloader
 from cellmaps_imagedownloader.gene import ImageGeneNodeAttributeGenerator
 
@@ -51,6 +52,10 @@ def _parse_arguments(desc, args):
                              'and error message with example of file')
     parser.add_argument('--image_url', default='https://images.proteinatlas.org',
                         help='Base URL for downloading IF images')
+    parser.add_argument('--fake_images', action='store_true',
+                        help='If set, 1st image of each color is downloaded '
+                             'and subsequent images are just copies of those '
+                             'images')
     parser.add_argument('--poolsize', type=int,
                         default=4,
                         help='If using multiprocessing image downloader, '
@@ -171,8 +176,12 @@ Additional optional fields for registering datasets include
 
         imagegen = ImageGeneNodeAttributeGenerator(unique_list=ImageGeneNodeAttributeGenerator.get_unique_list_from_csvfile(theargs.unique),
                                                    samples_list=ImageGeneNodeAttributeGenerator.get_samples_from_csvfile(theargs.samples))
-        dloader = MultiProcessImageDownloader(poolsize=theargs.poolsize,
-                                              skip_existing=theargs.skip_existing)
+
+        if theargs.fake_images is True:
+            dloader = FakeImageDownloader()
+        else:
+            dloader = MultiProcessImageDownloader(poolsize=theargs.poolsize,
+                                                  skip_existing=theargs.skip_existing)
         return CellmapsImageDownloader(outdir=theargs.outdir,
                                        imagedownloader=dloader,
                                        imgsuffix=theargs.imgsuffix,

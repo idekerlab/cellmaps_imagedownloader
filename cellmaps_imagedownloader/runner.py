@@ -4,13 +4,14 @@ import os
 from multiprocessing import Pool
 import re
 import csv
-import subprocess
+import shutil
 import logging
 import logging.config
 import requests
 import time
 from datetime import date
 import json
+import warnings
 from tqdm import tqdm
 from cellmaps_utils import logutils
 from cellmaps_utils.provenance import ProvenanceUtil
@@ -80,6 +81,54 @@ class ImageDownloader(object):
         :return: 
         """
         raise CellMapsImageDownloaderError('Subclasses should implement this')
+
+
+class FakeImageDownloader(ImageDownloader):
+    """
+    Creates completely fake download by downloading
+    the first image in each color and then just makes
+    renamed copies
+    """
+    def __abs__(self):
+        """
+
+        :return:
+        """
+        super().__init__()
+        warnings.warn('This downloader generates FAKE images\n'
+                      'You have been warned!!!\n'
+                      'Have a nice day')
+
+    def download_images(self, download_list=None):
+        """
+        Downloads 1st image from server and then
+        and makes renamed copies for subsequent images
+
+        :param download_list:
+        :return:
+        """
+        num_to_download = len(download_list)
+        logger.info(str(num_to_download) + ' images to download')
+        t = tqdm(total=num_to_download, desc='Download',
+                 unit='images')
+
+        src_image_dict = {}
+        # assume 1st four images are the colors for the first image
+        for entry in download_list[0:4]:
+            t.update()
+            if download_file(entry) is not None:
+                raise CellMapsImageDownloaderError('Unable to download ' +
+                                                   str(entry))
+            fname = os.path.basename(entry[1])
+            color = re.sub('\..*$', '', re.sub('^.*_', '', fname))
+            src_image_dict[color] = entry[1]
+
+        for entry in download_list[5:]:
+            t.update()
+            fname = os.path.basename(entry[1])
+            color = re.sub('\..*$', '', re.sub('^.*_', '', fname))
+            shutil.copy(src_image_dict[color], entry[1])
+        return []
 
 
 class MultiProcessImageDownloader(ImageDownloader):
@@ -230,7 +279,7 @@ class CellmapsImageDownloader(object):
         self._softwareid = None
         self._image_gene_attrid = None
         self._provenance_utils = provenance_utils
-        self.skip_failed = skip_failed
+        self._skip_failed = skip_failed
 
     @staticmethod
     def get_example_provenance(requiredonly=True,
@@ -253,14 +302,14 @@ class CellmapsImageDownloader(object):
                      'project-name': 'Name of project'}
         if with_ids is not None and with_ids is True:
             guid_dict = ProvenanceUtil.example_dataset_provenance(with_ids=with_ids)
-            base_dict.update({'samples_file': guid_dict,
-                              'unique_file': guid_dict})
+            base_dict.update({CellmapsImageDownloader.SAMPLES_FILEKEY: guid_dict,
+                              CellmapsImageDownloader.UNIQUE_FILEKEY: guid_dict})
             return base_dict
 
         field_dict = ProvenanceUtil.example_dataset_provenance(requiredonly=requiredonly)
 
-        base_dict.update({'samples_file': field_dict,
-                          'unique_file': field_dict})
+        base_dict.update({CellmapsImageDownloader.SAMPLES_FILEKEY: field_dict,
+                          CellmapsImageDownloader.UNIQUE_FILEKEY: field_dict})
         return base_dict
 
     def _create_output_directory(self):
