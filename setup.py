@@ -41,7 +41,7 @@ setup(
         'Programming Language :: Python :: 3.10',
         'Programming Language :: Python :: 3.11',
     ],
-    description="Downloads IF and AP-MS data needed for CM4AI MuSIC pipeline",
+    description="Downloads IF data needed for CM4AI MuSIC pipeline",
     install_requires=requirements,
     license="MIT license",
     long_description=readme + '\n\n' + history,

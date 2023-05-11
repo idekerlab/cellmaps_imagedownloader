@@ -16,7 +16,7 @@ cellmaps_imagedownloader
 
 
 
-Downloads IF and AP-MS data needed for CM4AI MuSIC pipeline
+Downloads IF data needed for CM4AI MuSIC pipeline
 
 
 * Free software: MIT license
@@ -32,7 +32,7 @@ Dependencies
 Compatibility
 -------------
 
-* Python 3.3+
+* Python 3.8+
 
 Installation
 ------------
