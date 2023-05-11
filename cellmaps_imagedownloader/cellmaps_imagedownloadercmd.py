@@ -5,6 +5,7 @@ import sys
 import logging
 import logging.config
 import json
+import warnings
 
 from cellmaps_utils import logutils
 from cellmaps_utils import constants
@@ -178,6 +179,7 @@ Additional optional fields for registering datasets include
                                                    samples_list=ImageGeneNodeAttributeGenerator.get_samples_from_csvfile(theargs.samples))
 
         if theargs.fake_images is True:
+            warnings.warn('FAKE IMAGES ARE BEING DOWNLOADED!!!!!')
             dloader = FakeImageDownloader()
         else:
             dloader = MultiProcessImageDownloader(poolsize=theargs.poolsize,

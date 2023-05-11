@@ -10,11 +10,11 @@ import logging.config
 import requests
 import time
 from datetime import date
-import json
 import warnings
 from tqdm import tqdm
 from cellmaps_utils import logutils
 from cellmaps_utils.provenance import ProvenanceUtil
+from cellmaps_utils import constants
 import cellmaps_imagedownloader
 from cellmaps_imagedownloader.exceptions import CellMapsImageDownloaderError
 
@@ -180,35 +180,6 @@ class CellmapsImageDownloader(object):
     """
     Class to run algorithm
     """
-
-    RED = 'red'
-    """
-    Red color directory name and color name
-    in red color files
-    """
-
-    BLUE = 'blue'
-    """
-    Blue color directory name and color name
-    in blue color files
-    """
-    GREEN = 'green'
-    """
-    Green color directory name and color name
-    in green color files
-    """
-
-    YELLOW = 'yellow'
-    """
-    Yellow color directory name and color name
-    in yellow color files
-    """
-
-    COLORS = [RED, BLUE, GREEN, YELLOW]
-    """
-    List of colors
-    """
-
     SAMPLES_CSVFILE = 'samples.csv'
     """
     Copy of input csv file that is stored in output
@@ -223,11 +194,6 @@ class CellmapsImageDownloader(object):
 
     SAMPLES_FILEKEY = 'samples'
     UNIQUE_FILEKEY = 'unique'
-
-    IMAGE_GENE_NODE_ATTR_FILE = 'image_gene_node_attributes.tsv'
-    IMAGE_GENE_NODE_ERRORS_FILE = 'image_gene_node_attributes.errors'
-    IMAGE_GENE_NODE_COLS = ['name', 'represents', 'ambiguous',
-                            'antibody', 'filename']
 
     def __init__(self, outdir=None,
                  imgsuffix='.jpg',
@@ -280,6 +246,7 @@ class CellmapsImageDownloader(object):
         self._image_gene_attrid = None
         self._provenance_utils = provenance_utils
         self._skip_failed = skip_failed
+        self._image_dataset_ids = None
 
     @staticmethod
     def get_example_provenance(requiredonly=True,
@@ -321,7 +288,7 @@ class CellmapsImageDownloader(object):
         if os.path.isdir(self._outdir):
             raise CellMapsImageDownloaderError(self._outdir + ' already exists')
 
-        for cur_color in CellmapsImageDownloader.COLORS:
+        for cur_color in constants.COLORS:
             cdir = os.path.join(self._outdir, cur_color)
             if not os.path.isdir(cdir):
                 logger.debug('Creating directory: ' + cdir)
@@ -352,14 +319,14 @@ class CellmapsImageDownloader(object):
         data_dict = {'name': cellmaps_imagedownloader.__name__ + ' output file',
                      'description': 'Image gene node attributes file',
                      'data-format': 'tsv',
-                     'author': '',
+                     'author': cellmaps_imagedownloader.__name__,
                      'version': cellmaps_imagedownloader.__version__,
                      'date-published': date.today().strftime('%m-%d-%Y')}
         self._image_gene_attrid = self._provenance_utils.register_dataset(self._outdir,
                                                                           source_file=self.get_image_gene_node_attributes_file(),
                                                                           data_dict=data_dict)
 
-    def _add_dataset_to_crate(self, crate_path=None, data_dict=None,
+    def _add_dataset_to_crate(self, data_dict=None,
                               source_file=None, skip_copy=True):
         """
 
@@ -377,6 +344,15 @@ class CellmapsImageDownloader(object):
 
         :return:
         """
+        generated = [self._image_gene_attrid]
+        if self._image_dataset_ids is not None:
+            if len(self._image_dataset_ids) > 2000:
+                logger.error('Too many images to register with FAIRSCAPE. registering 1st 2,000')
+                warnings.warn('Too many images to register with FAIRSCAPE. registering 1st 2,000')
+                generated.extend(self._image_dataset_ids[0:2000])
+            else:
+                generated.extend(self._image_dataset_ids)
+
         self._provenance_utils.register_computation(self._outdir,
                                                     name=cellmaps_imagedownloader.__name__ + ' computation',
                                                     run_by=str(os.getlogin()),
@@ -384,7 +360,7 @@ class CellmapsImageDownloader(object):
                                                     description='run of ' + cellmaps_imagedownloader.__name__,
                                                     used_software=[self._softwareid],
                                                     used_dataset=[self._unique_datasetid, self._samples_datasetid],
-                                                    generated=[self._image_gene_attrid])
+                                                    generated=generated)
 
     def _create_run_crate(self):
         """
@@ -422,19 +398,45 @@ class CellmapsImageDownloader(object):
 
         if self._samples_datasetid is None:
             # write file and add samples dataset
-            self._samples_datasetid = self._add_dataset_to_crate(crate_path=self._outdir,
-                                                                 data_dict=self._provenance[CellmapsImageDownloader.SAMPLES_FILEKEY],
+            self._samples_datasetid = self._add_dataset_to_crate(data_dict=self._provenance[CellmapsImageDownloader.SAMPLES_FILEKEY],
                                                                  source_file=self._input_data_dict[CellmapsImageDownloader.SAMPLES_FILEKEY],
                                                                  skip_copy=False)
             logger.debug('Samples dataset id: ' + str(self._samples_datasetid))
 
         if self._unique_datasetid is None:
             # write file and add unique dataset
-            self._unique_datasetid = self._add_dataset_to_crate(crate_path=self._outdir,
-                                                                data_dict=self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY],
+            self._unique_datasetid = self._add_dataset_to_crate(data_dict=self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY],
                                                                 source_file=self._input_data_dict[CellmapsImageDownloader.UNIQUE_FILEKEY],
                                                                 skip_copy=False)
             logger.debug('Unique dataset id: ' + str(self._unique_datasetid))
+
+    def _register_downloaded_images(self):
+        """
+        Registers all the downloaded images
+        :return:
+        """
+        data_dict = {'name': cellmaps_imagedownloader.__name__ + ' downloaded image file',
+                     'description': 'IF image file',
+                     'data-format': self._imgsuffix,
+                     'author': 'Emma Lundberg',
+                     'version': '???',
+                     'date-published': date.today().strftime('%m-%d-%Y')}
+
+        self._image_dataset_ids = []
+
+        for c in constants.COLORS:
+            cntr = 0
+            for entry in tqdm(os.listdir(os.path.join(self._outdir, c)), desc='FAIRSCAPE ' + c + ' images registration'):
+                if not entry.endswith(self._imgsuffix):
+                    continue
+                fullpath = os.path.join(self._outdir, c, entry)
+                self._image_dataset_ids.append(self._add_dataset_to_crate(data_dict=data_dict,
+                                                                          source_file=fullpath,
+                                                                          skip_copy=True))
+                cntr += 1
+                if cntr > 25:
+                    logger.error('FAIRSCAPE cannot handle too many images, skipping rest')
+                    break
 
     def _get_color_download_map(self):
         """
@@ -447,7 +449,7 @@ class CellmapsImageDownloader(object):
         :rtype: dict
         """
         color_d_map = {}
-        for c in CellmapsImageDownloader.COLORS:
+        for c in constants.COLORS:
             color_d_map[c] = os.path.join(self._outdir, c)
         return color_d_map
 
@@ -472,7 +474,7 @@ class CellmapsImageDownloader(object):
 
         color_d_map = self._get_color_download_map()
         for row in self._imagegen.get_samples_list():
-            for c in CellmapsImageDownloader.COLORS:
+            for c in constants.COLORS:
                 image_url, file_name = self._get_sample_url_and_filename(sample=row, color=c)
                 dtuples.append((image_url,
                                 os.path.join(color_d_map[c], file_name)))
@@ -549,7 +551,7 @@ class CellmapsImageDownloader(object):
         :rtype: str
         """
         return os.path.join(self._outdir,
-                            CellmapsImageDownloader.IMAGE_GENE_NODE_ATTR_FILE)
+                            constants.IMAGE_GENE_NODE_ATTR_FILE)
 
     def get_image_gene_node_errors_file(self):
         """
@@ -560,7 +562,7 @@ class CellmapsImageDownloader(object):
         :rtype: str
         """
         return os.path.join(self._outdir,
-                            CellmapsImageDownloader.IMAGE_GENE_NODE_ERRORS_FILE)
+                            constants.IMAGE_GENE_NODE_ERRORS_FILE)
 
     def _write_image_gene_node_attrs(self, gene_node_attrs=None,
                                      errors=None):
@@ -571,7 +573,7 @@ class CellmapsImageDownloader(object):
         :return:
         """
         with open(self.get_image_gene_node_attributes_file(), 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=CellmapsImageDownloader.IMAGE_GENE_NODE_COLS, delimiter='\t')
+            writer = csv.DictWriter(f, fieldnames=constants.IMAGE_GENE_NODE_COLS, delimiter='\t')
             writer.writeheader()
             for key in gene_node_attrs:
                 writer.writerow(gene_node_attrs[key])
@@ -599,10 +601,7 @@ class CellmapsImageDownloader(object):
             self._create_run_crate()
             self._register_input_datasets()
 
-            # Todo: uncomment when fixed
-            # register software fails due to this bug:
-            # https://github.com/fairscape/fairscape-cli/issues/7
-            # self._register_software()
+            self._register_software()
 
             # write image attribute data
             image_gene_node_attrs, errors = self._imagegen.get_gene_node_attributes()
@@ -610,21 +609,15 @@ class CellmapsImageDownloader(object):
             # write image attribute data
             self._write_image_gene_node_attrs(image_gene_node_attrs, errors)
 
-            # Todo: uncomment when fixed
-            # register image_gene_node_attrs fails due to this bug:
-            # https://github.com/fairscape/fairscape-cli/issues/6
-            # self._register_image_gene_node_attrs()
+            self._register_image_gene_node_attrs()
 
-            # Todo: Need to put this below download images once we know
-            #       how to register all 100k+ images
-
-            # Todo: uncomment when above work
-            # Above registrations need to work for this to work
-            # register computation
-            # self._register_computation()
+            self._register_computation()
 
             exitcode = self._download_images()
             # todo need to validate downloaded image data
+
+            # Todo: Right now only registering 2,000 images. need to fix
+            self._register_downloaded_images()
 
             return exitcode
         finally:

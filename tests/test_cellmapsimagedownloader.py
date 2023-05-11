@@ -11,6 +11,7 @@ import requests_mock
 from unittest.mock import MagicMock
 from unittest.mock import Mock
 import json
+from cellmaps_utils import constants
 import cellmaps_imagedownloader
 from cellmaps_imagedownloader.exceptions import CellMapsImageDownloaderError
 from cellmaps_utils.exceptions import CellMapsProvenanceError
@@ -141,7 +142,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
             run_dir = os.path.join(temp_dir, 'run')
             crunner = CellmapsImageDownloader(outdir=run_dir)
             crunner._create_output_directory()
-            for c in CellmapsImageDownloader.COLORS:
+            for c in constants.COLORS:
                 self.assertTrue(os.path.isdir(os.path.join(run_dir, c)))
         finally:
             shutil.rmtree(temp_dir)
@@ -194,7 +195,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
             dtuples = crunner._get_download_tuples_from_csv()
 
             self.assertEqual(8, len(dtuples))
-            for c in CellmapsImageDownloader.COLORS:
+            for c in constants.COLORS:
                 for fname in ['1_A1_1_', '2_A3_4_']:
                     self.assertTrue((link + '/992/' + fname + c + suffix,
                                      os.path.join(temp_dir, c,
