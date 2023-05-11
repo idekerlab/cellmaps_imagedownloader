@@ -435,6 +435,7 @@ class CellmapsImageDownloader(object):
                                                                           skip_copy=True))
                 cntr += 1
                 if cntr > 25:
+                    # Todo: https://github.com/fairscape/fairscape-cli/issues/9
                     logger.error('FAIRSCAPE cannot handle too many images, skipping rest')
                     break
 
