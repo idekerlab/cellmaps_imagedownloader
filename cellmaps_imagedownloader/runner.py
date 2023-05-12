@@ -265,7 +265,8 @@ class CellmapsImageDownloader(object):
         :type with_ids: bool
         :return:
         """
-        base_dict = {'organization-name': 'Name of organization',
+        base_dict = {'name': 'Name for pipeline run',
+                     'organization-name': 'Name of organization',
                      'project-name': 'Name of project'}
         if with_ids is not None and with_ids is True:
             guid_dict = ProvenanceUtil.example_dataset_provenance(with_ids=with_ids)
@@ -370,7 +371,7 @@ class CellmapsImageDownloader(object):
         """
         try:
             self._provenance_utils.register_rocrate(self._outdir,
-                                                    name='cellmaps_imagedownloader',
+                                                    name=self._provenance['name'],
                                                     organization_name=self._provenance['organization-name'],
                                                     project_name=self._provenance['project-name'])
         except TypeError as te:
@@ -430,6 +431,8 @@ class CellmapsImageDownloader(object):
                 if not entry.endswith(self._imgsuffix):
                     continue
                 fullpath = os.path.join(self._outdir, c, entry)
+                data_dict['name'] = entry + ' ' + c +\
+                                    ' channel downloaded image file'
                 self._image_dataset_ids.append(self._add_dataset_to_crate(data_dict=data_dict,
                                                                           source_file=fullpath,
                                                                           skip_copy=True))
@@ -612,13 +615,13 @@ class CellmapsImageDownloader(object):
 
             self._register_image_gene_node_attrs()
 
-            self._register_computation()
-
             exitcode = self._download_images()
             # todo need to validate downloaded image data
 
             # Todo: Right now only registering 2,000 images. need to fix
             self._register_downloaded_images()
+
+            self._register_computation()
 
             return exitcode
         finally:

@@ -4,6 +4,6 @@
 
 __author__ = """Gege Qian"""
 __email__ = 'geqian@ucsd.edu'
-__version__ = '0.1.0a1'
+__version__ = '0.1.0a2'
 __repo_url__ = 'https://github.com/idekerlab/cellmaps_downloader'
 __description__ = 'A tool to download specified image data from the Human Protein Atlas website using CSV file'
