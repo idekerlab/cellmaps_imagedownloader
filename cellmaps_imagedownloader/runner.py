@@ -356,7 +356,7 @@ class CellmapsImageDownloader(object):
 
         self._provenance_utils.register_computation(self._outdir,
                                                     name=cellmaps_imagedownloader.__name__ + ' computation',
-                                                    run_by=str(os.getlogin()),
+                                                    run_by=str(self._provenance_utils.get_login()),
                                                     command=str(self._input_data_dict),
                                                     description='run of ' + cellmaps_imagedownloader.__name__,
                                                     used_software=[self._softwareid],

@@ -23,11 +23,14 @@ Downloads IF data needed for CM4AI MuSIC pipeline
 * Documentation: https://cellmaps-imagedownloader.readthedocs.io.
 
 
-
 Dependencies
 ------------
 
-* TODO add
+* `cellmaps_utils <https://pypi.org/project/cellmaps-utils>`__
+* `fairscape-cli <https://pypi.org/project/fairscape-cli>`__
+* `requests <https://pypi.org/project/requests>`__
+* `mygene <https://pypi.org/project/mygene>`__
+* `tqdm <https://pypi.org/project/tqdm>`__
 
 Compatibility
 -------------
@@ -36,6 +39,12 @@ Compatibility
 
 Installation
 ------------
+
+.. code-block::
+
+    pip install cellmaps_imagedownloader
+
+**Or directly from source:**
 
 .. code-block::
 
@@ -88,11 +97,10 @@ For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
 
 **Example usage**
 
-**TODO:** Add information about example usage
 
 .. code-block::
 
-   cellmaps_imagedownloadercmd.py # TODO Add other needed arguments here
+    cellmaps_imagedownloadercmd.py
 
 
 Via Docker
