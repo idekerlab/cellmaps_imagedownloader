@@ -136,7 +136,7 @@ class MultiProcessImageDownloader(ImageDownloader):
     Uses multiprocess package to download images in parallel
     """
 
-    def __init__(self, poolsize=1, skip_existing=False,
+    def __init__(self, poolsize=4, skip_existing=False,
                  override_dfunc=None):
         """
         Constructor
@@ -199,7 +199,7 @@ class CellmapsImageDownloader(object):
                  imgsuffix='.jpg',
                  imagedownloader=MultiProcessImageDownloader(),
                  imagegen=None,
-                 image_url=None,
+                 image_url='https://images.proteinatlas.org',
                  skip_logging=False,
                  provenance=None,
                  input_data_dict=None,
