@@ -63,6 +63,7 @@ def download_file(downloadtuple):
 
 class ImageDownloader(object):
     """
+    Abstract class that defines interface for classes that download images
 
     """
     def __init__(self):
@@ -74,6 +75,7 @@ class ImageDownloader(object):
     def download_images(self, download_list=None):
         """
         Subclasses should implement
+
         :param download_list: list of tuples where first element is
                               full URL of image to download and 2nd
                               element is destination path
@@ -88,6 +90,7 @@ class FakeImageDownloader(ImageDownloader):
     Creates completely fake download by downloading
     the first image in each color and then just makes
     renamed copies
+
     """
     def __abs__(self):
         """
@@ -134,6 +137,7 @@ class FakeImageDownloader(ImageDownloader):
 class MultiProcessImageDownloader(ImageDownloader):
     """
     Uses multiprocess package to download images in parallel
+
     """
 
     def __init__(self, poolsize=4, skip_existing=False,
@@ -179,6 +183,7 @@ class MultiProcessImageDownloader(ImageDownloader):
 class CellmapsImageDownloader(object):
     """
     Class to run algorithm
+
     """
     SAMPLES_CSVFILE = 'samples.csv'
     """
@@ -289,14 +294,13 @@ class CellmapsImageDownloader(object):
         if os.path.isdir(self._outdir):
             raise CellMapsImageDownloaderError(self._outdir + ' already exists')
 
+        os.makedirs(self._outdir, mode=0o755)
         for cur_color in constants.COLORS:
             cdir = os.path.join(self._outdir, cur_color)
             if not os.path.isdir(cdir):
                 logger.debug('Creating directory: ' + cdir)
                 os.makedirs(cdir,
                             mode=0o755)
-            else:
-                logger.debug(cdir + ' already exists')
 
     def _register_software(self):
         """
@@ -521,6 +525,7 @@ class CellmapsImageDownloader(object):
         """
         Uses downloader specified in constructor to download images noted in
         tsvfile file also specified in constructor
+
         :raises CellMapsImageDownloaderError: if image downloader is ``None`` or
                                          if there are failed downloads
         :return: 0 upon success otherwise, failure
