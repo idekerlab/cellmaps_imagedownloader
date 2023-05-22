@@ -14,8 +14,6 @@ cellmaps_imagedownloader
         :alt: Documentation Status
 
 
-
-
 Downloads IF data needed for CM4AI MuSIC pipeline
 
 
