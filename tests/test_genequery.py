@@ -38,6 +38,17 @@ class TestGeneQuery(unittest.TestCase):
                                                     fields=['field1'],
                                                     species='human')
 
+    def test_get_symbols_for_genes(self):
+        mockquery = MagicMock()
+
+        mockquery.querymany = MagicMock(return_value={})
+        query = GeneQuery(mygeneinfo=mockquery)
+        res = query.get_symbols_for_genes(genelist=['g1'])
+        self.assertEqual({}, res)
+        mockquery.querymany.assert_called_once_with(['g1'], scopes='_id',
+                                                    fields=['ensembl.gene', 'symbol'],
+                                                    species='human')
+
     @unittest.skipUnless(os.getenv('CELLMAPS_DOWNLOADER_INTEGRATION_TEST') is not None, SKIP_REASON)
     def test_simple_query(self):
         query = GeneQuery()
