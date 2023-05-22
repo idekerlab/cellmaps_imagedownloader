@@ -134,17 +134,93 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                            'position', 'sample', 'status',
                            'locations', 'antibody',
                            'ensembl_ids', 'gene_names']
+    """
+    Column labels for samples file
+    """
 
     UNIQUE_HEADER_COLS = ['antibody', 'ensembl_ids',
                           'gene_names', 'atlas_name',
                           'locations',
                           'n_location']
+    """
+    Column labels for unique file
+    """
 
     def __init__(self, samples_list=None,
                  unique_list=None,
                  genequery=GeneQuery()):
         """
         Constructor
+
+        **samples_list** is expected to be a list of :py:class:`dict`
+        objects with this format:
+
+        # TODO: Move this to a separate data document
+
+        .. code-block::
+
+            {
+             'filename': HPA FILENAME,
+             'if_plate_id': HPA PLATE ID,
+             'position': POSITION,
+             'sample': SAMPLE,
+             'status': STATUS,
+             'locations': COMMA DELIMITED LOCATIONS,
+             'antibody': ANTIBODY_ID,
+             'ensembl_ids': COMMA DELIMITED ENSEMBLID IDS,
+             'gene_names': COMMA DELIMITED GENE SYMBOLS
+            }
+
+        **Example:**
+
+        .. code-block::
+
+            {
+             'filename': '/archive/1/1_A1_1_',
+             'if_plate_id': '1',
+             'position': 'A1',
+             'sample': '1',
+             'status': '35',
+             'locations': 'Golgi apparatus',
+             'antibody': 'HPA000992',
+             'ensembl_ids': 'ENSG00000066455',
+             'gene_names': 'GOLGA5'
+            }
+
+        **unique_list** is expected to be a list of :py:class:`dict`
+        objects with this format:
+
+        .. code-block::
+
+            {
+             'antibody': ANTIBODY,
+             'ensembl_ids': COMMA DELIMITED ENSEMBL IDS,
+             'gene_names': COMMA DELIMITED GENE SYMBOLS,
+             'atlas_name': ATLAS NAME?,
+             'locations': COMMA DELIMITED LOCATIONS IN CELL,
+             'n_location': NUMBER OF LOCATIONS IN CELL,
+             }
+
+        **Example:**
+
+        .. code-block::
+
+            {
+             'antibody': 'HPA040086',
+             'ensembl_ids': 'ENSG00000094914',
+             'gene_names': 'AAAS',
+             'atlas_name': 'U-2',
+             'locations': 'OS,Nuclear membrane',
+             'n_location': '2',
+             }
+
+
+        :param samples_list: List of samples
+        :type samples_list: list
+        :param unique_list: List of unique samples
+        :type unique_list: list
+        :param genequery: Object to query for updated gene symbols
+        :type genequery: :py:class:`~cellmaps_imagedownloader.gene.GeneQuery`
         """
         super().__init__()
         self._samples_list = samples_list
@@ -153,25 +229,13 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
 
     def get_samples_list(self):
         """
-        Gets samples_list passed in via the constructor
+        Gets **samples_list** passed in via the constructor
 
-        :return:
+
+        :return: list of samples set via constructor
+        :rtype: list
         """
         return self._samples_list
-
-    def write_samples_as_csvfile(self, outfile=None):
-        """
-
-        :param outfile:
-        :return:
-        """
-        if self._samples_list is None:
-            raise CellMapsImageDownloaderError('samples list is None')
-        with open(outfile, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=ImageGeneNodeAttributeGenerator.SAMPLES_HEADER_COLS)
-            writer.writeheader()
-            for sample in self._samples_list:
-                writer.writerow(sample)
 
     @staticmethod
     def get_samples_from_csvfile(csvfile=None):
@@ -201,21 +265,6 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         """
         return self._unique_list
 
-    def write_unique_list_as_csvfile(self, outfile=None):
-        """
-
-        :param outfile:
-        :return:
-        """
-        if self._unique_list is None:
-            raise CellMapsImageDownloaderError('unique list is None')
-
-        with open(outfile, 'w', newline='') as f:
-            writer = csv.DictWriter(f, fieldnames=ImageGeneNodeAttributeGenerator.UNIQUE_HEADER_COLS)
-            writer.writeheader()
-            for u in self._unique_list:
-                writer.writerow(u)
-
     @staticmethod
     def get_unique_list_from_csvfile(csvfile=None):
         """
@@ -230,12 +279,10 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         with open(csvfile, 'r') as f:
             reader = csv.DictReader(f, delimiter=',')
             for row in reader:
-                u_list.append({'antibody': row['antibody'],
-                               'ensembl_ids': row['ensembl_ids'],
-                               'gene_names': row['gene_names'],
-                               'atlas_name': row['atlas_name'],
-                               'locations': row['locations'],
-                               'n_location': row['n_location']})
+                unique_entry = {}
+                for key in ImageGeneNodeAttributeGenerator.UNIQUE_HEADER_COLS:
+                    unique_entry[key] = row[key]
+                u_list.append(unique_entry)
         return u_list
 
     def _get_set_of_antibodies_from_unique_list(self):

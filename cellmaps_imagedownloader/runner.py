@@ -43,11 +43,15 @@ def download_file(downloadtuple):
     Downloads file pointed to by 'download_url' to
     'destfile'
 
-    :param downloadtuple: (download link, dest file path)
+    .. note::
+
+        Default download function used by :py:class:`~MultiProcessImageDownloader`
+
+    :param downloadtuple: `(download link, dest file path)`
     :type downloadtuple: tuple
     :raises Exception: from requests library if there is an error or non 200 status
     :return: None upon success otherwise:
-             (requests status code, text from request, downloadtuple)
+             `(requests status code, text from request, downloadtuple)`
     :rtype: tuple
     """
     logger.debug('Downloading ' + downloadtuple[0] + ' to ' + downloadtuple[1])
@@ -87,15 +91,17 @@ class ImageDownloader(object):
 
 class FakeImageDownloader(ImageDownloader):
     """
-    Creates completely fake download by downloading
-    the first image in each color and then just makes
-    renamed copies
+    Creates fake download by downloading
+    the first image in each color from
+    `Human Protein Atlas <https://www.proteinatlas.org/>`__
+    and making renamed copies. The :py:func:`download_file` function
+    is used to download the first image of each color
 
     """
     def __abs__(self):
         """
+        Constructor
 
-        :return:
         """
         super().__init__()
         warnings.warn('This downloader generates FAKE images\n'
@@ -108,6 +114,7 @@ class FakeImageDownloader(ImageDownloader):
         and makes renamed copies for subsequent images
 
         :param download_list:
+        :type download_list: list of tuple
         :return:
         """
         num_to_download = len(download_list)
@@ -144,6 +151,20 @@ class MultiProcessImageDownloader(ImageDownloader):
                  override_dfunc=None):
         """
         Constructor
+
+        .. warning::
+
+            Exceeding **poolsize** of ``4`` causes errors from Human Protein Atlas site
+
+        :param poolsize: Number of concurrent downloaders to use.
+        :type poolsize: int
+        :param skip_existing: If ``True`` skip download if image file exists and has size
+                              greater then ``0``
+        :type skip_existing: bool
+        :param override_dfunc: Function that takes a tuple `(image URL, download str path)`
+                               and downloads the image. If ``None`` :py:func:`download_file`
+                               function is used
+        :type override_dfunc: :py:class:`function`
         """
         super().__init__()
         self._poolsize = poolsize
@@ -158,9 +179,21 @@ class MultiProcessImageDownloader(ImageDownloader):
         """
         Downloads images returning a list of failed downloads
 
-        :param download_list:
-        :return: of tuples (`http status code`, `text of error`, (`link`, `destfile`))
-        :rtype: list
+        .. code-block::
+
+            from cellmaps_imagedownloader.runner import MultiProcessImageDownloader
+
+            dloader = MultiProcessImageDownloader(poolsize=2)
+
+            d_list = [('https://images.proteinatlas.org/992/1_A1_1_red.jpg',
+                       '/tmp/1_A1_1_red.jpg')]
+            failed = dloader.download_images(download_list=d_list)
+
+        :param download_list: Each tuple of format `(image URL, dest file path)`
+        :type download_list: list of tuple
+        :return: Failed downloads, format of tuple
+                 (`http status code`, `text of error`, (`link`, `destfile`))
+        :rtype: list of tuple
         """
         failed_downloads = []
         logger.debug('Poolsize for image downloader set to: ' +
@@ -182,19 +215,11 @@ class MultiProcessImageDownloader(ImageDownloader):
 
 class CellmapsImageDownloader(object):
     """
-    Class to run algorithm
+    Downloads Immunofluorescent images from
+    `Human Protein Atlas <https://www.proteinatlas.org>`__
+    storing them in an output directory that is locally
+    registered as an `RO-Crate <https://www.researchobject.org/ro-crate>`__
 
-    """
-    SAMPLES_CSVFILE = 'samples.csv'
-    """
-    Copy of input csv file that is stored in output
-    directory by the :py:meth:`~cellmaps_imagedownloader.runner.CellmapsImageDownloader.run`
-    """
-
-    UNIQUE_CSVFILE = 'unique.csv'
-    """
-    Copy of input csv file that is stored in output
-    directory by the :py:meth:`~cellmaps_imagedownloader.runner.CellmapsImageDownloader.run`
     """
 
     SAMPLES_FILEKEY = 'samples'
@@ -221,14 +246,18 @@ class CellmapsImageDownloader(object):
         :type imagedownloader: :py:class:`~cellmaps_downloader.runner.ImageDownloader`
         :param imagegen: gene node attribute generator for IF image data
         :type imagegen: :py:class:`~cellmaps_imagedownloader.gene.ImageGeneNodeAttributeGenerator`
-        :param image_url: Base URL for image download
+        :param image_url: Base URL for image download from Human Protein Atlas
         :type image_url: str
-        :param skip_logging:
+        :param skip_logging: If ``True`` skip logging
         :type skip_logging: bool
         :param provenance:
         :type provenance: dict
         :param input_data_dict:
         :type input_data_dict: dict
+        :param provenance_utils: Wrapper for `fairscape-cli <https://pypi.org/project/fairscape-cli>`__
+                                 which is used for
+                                 `RO-Crate <https://www.researchobject.org/ro-crate>`__ creation and population
+        :type provenance_utils: :py:class:`~cellmaps_utils.provenance.ProvenanceUtil`
         """
         if outdir is None:
             raise CellMapsImageDownloaderError('outdir is None')

@@ -25,7 +25,6 @@ Dependencies
 ------------
 
 * `cellmaps_utils <https://pypi.org/project/cellmaps-utils>`__
-* `fairscape-cli <https://pypi.org/project/fairscape-cli>`__
 * `requests <https://pypi.org/project/requests>`__
 * `mygene <https://pypi.org/project/mygene>`__
 * `tqdm <https://pypi.org/project/tqdm>`__
