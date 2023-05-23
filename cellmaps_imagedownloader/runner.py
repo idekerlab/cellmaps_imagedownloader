@@ -49,20 +49,30 @@ def download_file(downloadtuple):
 
     :param downloadtuple: `(download link, dest file path)`
     :type downloadtuple: tuple
-    :raises Exception: from requests library if there is an error or non 200 status
     :return: None upon success otherwise:
              `(requests status code, text from request, downloadtuple)`
     :rtype: tuple
     """
     logger.debug('Downloading ' + downloadtuple[0] + ' to ' + downloadtuple[1])
-    with requests.get(downloadtuple[0], stream=True) as r:
-        if r.status_code != 200:
-            return r.status_code, r.text, downloadtuple
-        with open(downloadtuple[1], 'wb') as f:
-            for chunk in r.iter_content(chunk_size=8192):
-                if chunk:  # filter out keep-alive new chunks
-                    f.write(chunk)
-    return None
+    try:
+        with requests.get(downloadtuple[0], stream=True) as r:
+            if r.status_code != 200:
+                return r.status_code, r.text, downloadtuple
+            with open(downloadtuple[1], 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:  # filter out keep-alive new chunks
+                        f.write(chunk)
+        return None
+    except requests.exceptions.HTTPError as e:
+        return -1, str(e), downloadtuple
+    except requests.exceptions.ConnectionError as e:
+        return -2, str(e), downloadtuple
+    except requests.exceptions.Timeout as e:
+        return -3, str(e), downloadtuple
+    except requests.exceptions.RequestException as e:
+        return -4, str(e), downloadtuple
+    except Exception as e:
+        return -5, str(e), downloadtuple
 
 
 class ImageDownloader(object):
