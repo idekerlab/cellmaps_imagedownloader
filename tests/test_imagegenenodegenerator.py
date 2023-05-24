@@ -181,3 +181,194 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
         antibody_dict, filename_dict = imagegen.get_dicts_of_gene_to_antibody_filename(allowed_antibodies={'antibody_two'})
         self.assertEqual({'ensemble_two': {'antibody_two'}}, antibody_dict)
         self.assertEqual({'ensemble_two': {'3_B1_4_'}}, filename_dict)
+
+    def test_get_unique_ids_from_samplelist(self):
+
+        samples = [{'ensembl_ids': 'ENSG01,ENSG02'}]
+
+        imagegen = ImageGeneNodeAttributeGenerator(samples_list=samples)
+        id_set, ambiguous_id_dict = imagegen._get_unique_ids_from_samplelist()
+        self.assertTrue(2, len(id_set))
+        self.assertTrue('ENSG02' in id_set)
+        self.assertTrue('ENSG01' in id_set)
+        self.assertEqual({'ENSG01': 'ENSG01,ENSG02',
+                          'ENSG02': 'ENSG01,ENSG02'}, ambiguous_id_dict)
+
+    def test_get_gene_node_attributes_simple(self):
+        samples = [{'if_plate_id': '1',
+                    'position': 'A1',
+                    'sample': '1',
+                    'antibody': 'HPA000992',
+                    'ensembl_ids': 'ENSG00000066455',
+                    'gene_names': 'GOLGA5'},
+                   {'if_plate_id': '1',
+                    'position': 'A1',
+                    'sample': '2',
+                    'antibody': 'HPA000992',
+                    'ensembl_ids': 'ENSG00000066455',
+                    'gene_names': 'GOLGA5'},
+                   {'if_plate_id': '1',
+                    'position': 'A3',
+                    'sample': '1',
+                    'antibody': 'HPA002899',
+                    'ensembl_ids': 'ENSG00000183092',
+                    'gene_names': 'BEGAIN'},
+                   {'if_plate_id': '1',
+                    'position': 'A3',
+                    'sample': '2',
+                    'antibody': 'HPA002899',
+                    'ensembl_ids': 'ENSG00000183092',
+                    'gene_names': 'BEGAIN'}]
+        unique = [{'antibody': 'HPA000992',
+                   'ensembl_ids': 'ENSG00000066455',
+                   'gene_names': 'GOLGA5'},
+                  {'antibody': 'HPA002899',
+                   'ensembl_ids': 'ENSG00000183092',
+                   'gene_names': 'BEGAIN'}
+                  ]
+
+        mockgenequery = MagicMock()
+        mockgenequery.get_symbols_for_genes = MagicMock(return_value=[{'query': 'ENSG00000066455',
+                                                                       '_id': '9950',
+                                                                       '_score': 25.046944,
+                                                                       'ensembl': {'gene':'ENSG00000066455'},
+                                                                       'symbol': 'GOLGA5'
+                                                                       },
+                                                                       {'query': 'ENSG00000183092',
+                                                                        '_id': '57596', '_score': 24.51739,
+                                                                        'ensembl': {'gene': 'ENSG00000183092'},
+                                                                        'symbol': 'BEGAIN'}])
+
+        imagegen = ImageGeneNodeAttributeGenerator(samples_list=samples,
+                                                   unique_list=unique,
+                                                   genequery=mockgenequery)
+
+        res = imagegen.get_gene_node_attributes()
+        gene_node_attrs = res[0]
+        print(gene_node_attrs)
+        print('\n\n\n\n')
+        self.assertTrue('ENSG00000066455' in gene_node_attrs)
+        self.assertEqual('GOLGA5', gene_node_attrs['ENSG00000066455']['name'])
+        self.assertEqual('ensembl:ENSG00000066455', gene_node_attrs['ENSG00000066455']['represents'])
+        self.assertTrue(gene_node_attrs['ENSG00000066455']['filename'] == '1_A1_2_,1_A1_1_' or
+                        gene_node_attrs['ENSG00000066455']['filename'] == '1_A1_1_,1_A1_2_')
+
+        self.assertTrue('ENSG00000183092' in gene_node_attrs)
+
+        # check errors is empty
+        self.assertEqual([], res[1])
+
+    def test_get_gene_node_attributes_no_symbol(self):
+        samples = [{'if_plate_id': '1',
+                    'position': 'A1',
+                    'sample': '1',
+                    'antibody': 'HPA000992',
+                    'ensembl_ids': 'ENSG1',
+                    'gene_names': 'XXX'}]
+        unique = [{'antibody': 'HPA000992',
+                   'ensembl_ids': 'ENSG1',
+                   'gene_names': 'XXX'}]
+
+        mockgenequery = MagicMock()
+        mockgenequery.get_symbols_for_genes = MagicMock(return_value=[{'query': 'ENSG1',
+                                                                       'notfound': True}])
+
+        imagegen = ImageGeneNodeAttributeGenerator(samples_list=samples,
+                                                   unique_list=unique,
+                                                   genequery=mockgenequery)
+
+        res = imagegen.get_gene_node_attributes()
+        self.assertEqual({}, res[0])
+
+        # check we got an error
+        self.assertTrue(1, len(res[1]))
+        self.assertTrue('no symbol in query result' in res[1][0])
+
+    def test_get_gene_node_attributes_no_ensembl(self):
+        samples = [{'if_plate_id': '1',
+                    'position': 'A1',
+                    'sample': '1',
+                    'antibody': 'HPA000992',
+                    'ensembl_ids': 'ENSG1',
+                    'gene_names': 'XXX'}]
+        unique = [{'antibody': 'HPA000992',
+                   'ensembl_ids': 'ENSG1',
+                   'gene_names': 'XXX'}]
+
+        mockgenequery = MagicMock()
+        mockgenequery.get_symbols_for_genes = MagicMock(return_value=[{'query': 'ENSG1',
+                                                                       'symbol': 'XXX',
+                                                                       }])
+
+        imagegen = ImageGeneNodeAttributeGenerator(samples_list=samples,
+                                                   unique_list=unique,
+                                                   genequery=mockgenequery)
+
+        res = imagegen.get_gene_node_attributes()
+        self.assertEqual({}, res[0])
+
+        # check we got an error
+        self.assertTrue(1, len(res[1]))
+        self.assertTrue('no ensembl in query result' in res[1][0])
+
+    def test_get_gene_node_attributes_no_ensembl(self):
+        samples = [{'if_plate_id': '1',
+                    'position': 'A1',
+                    'sample': '1',
+                    'antibody': 'HPA000992',
+                    'ensembl_ids': 'ENSG1',
+                    'gene_names': 'XXX'}]
+        unique = [{'antibody': 'HPA000992',
+                   'ensembl_ids': 'ENSG1',
+                   'gene_names': 'XXX'}]
+
+        mockgenequery = MagicMock()
+        mockgenequery.get_symbols_for_genes = MagicMock(return_value=[{'query': 'ENSG1',
+                                                                       'symbol': 'XXX',
+                                                                       }])
+
+        imagegen = ImageGeneNodeAttributeGenerator(samples_list=samples,
+                                                   unique_list=unique,
+                                                   genequery=mockgenequery)
+
+        res = imagegen.get_gene_node_attributes()
+        self.assertEqual({}, res[0])
+
+        # check we got an error
+        self.assertTrue(1, len(res[1]))
+        self.assertTrue('no ensembl in query result' in res[1][0])
+
+    def test_get_gene_node_attributes_multiple_ensembl(self):
+        samples = [{'if_plate_id': '1',
+                    'position': 'A1',
+                    'sample': '1',
+                    'antibody': 'HPA000992',
+                    'ensembl_ids': 'ENSG1',
+                    'gene_names': 'XXX'}]
+        unique = [{'antibody': 'HPA000992',
+                   'ensembl_ids': 'ENSG1',
+                   'gene_names': 'XXX'}]
+
+        mockgenequery = MagicMock()
+        mockgenequery.get_symbols_for_genes = MagicMock(return_value=[{'query': 'ENSG1',
+                                                                       '_id': '3975',
+                                                                       '_score': 24.515644,
+                                                                       'ensembl': [{'gene': 'ENSG1'},
+                                                                                   {'gene': 'ENSG2'}],
+                                                                       'symbol': 'XXX'}])
+
+        imagegen = ImageGeneNodeAttributeGenerator(samples_list=samples,
+                                                   unique_list=unique,
+                                                   genequery=mockgenequery)
+
+        res = imagegen.get_gene_node_attributes()
+        self.assertEqual('ensembl:ENSG1;ENSG2', res[0]['ENSG1']['represents'])
+
+        # check we got no error
+        self.assertEqual(0, len(res[1]))
+
+
+
+
+
+

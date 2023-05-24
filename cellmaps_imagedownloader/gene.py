@@ -371,10 +371,34 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
 
     def get_gene_node_attributes(self):
         """
-        TODO: need to implement this
+        Using **samples_list** and **unique_list**, builds
+        a list of :py:class:`dict` objects with updated Gene Symbols.
 
-        :return:
+        Format of each resulting :py:class:`dict`:
+
+        .. code-block::
+
+            {'name': GENE_SYMBOL,
+             'represents': ENSEMBL_ID,
+             'ambiguous': AMBIGUOUS_GENES,
+             'antibody': ANTIBODY,
+             'filename': FILENAME}
+
+        **Example**
+
+        .. code-block::
+
+            {'ENSG00000066455': {'name': 'GOLGA5',
+                                 'represents': 'ensembl:ENSG00000066455',
+                                 'ambiguous': '',
+                                 'antibody': 'HPA000992',
+                                 'filename': '1_A1_2_,1_A1_1_'}}
+
+        :return: (list of dict, list of errors)
+        :rtype: tuple
         """
+        # Todo: Refactor because this method is doing waaay too much
+
         t = tqdm(total=5, desc='Get updated gene symbols',
                  unit='steps')
 
@@ -383,8 +407,17 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         ensembl_id_list, _ = self._get_unique_ids_from_samplelist()
 
         t.update()
+
+        # queries mygene and gets a list of dicts that look like this:
+        # {'query': 'ENSG00000066455',
+        #  '_id': '9950',
+        #  '_score': 25.046944,
+        #  'ensembl': {'gene':'ENSG00000066455'},
+        #  'symbol': 'GOLGA5'
+        # }
         query_res = self._genequery.get_symbols_for_genes(genelist=ensembl_id_list,
                                                           scopes='ensembl.gene')
+
         t.update()
         # get mapping of ambiguous genes
         _, ambiguous_gene_dict = self._get_unique_ids_from_samplelist(column='gene_names')
@@ -401,12 +434,22 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         errors = []
         gene_node_attrs = {}
         for x in query_res:
+
+            # skips item that lacks a symbol like this one:
+            # {'query': 'ENSG00000282988',
+            #  '_id': 'ENSG00000282988',
+            #  '_score': 25.04868,
+            #  'ensembl': {'gene': 'ENSG00000282988'}}
             if 'symbol' not in x:
                 errors.append('Skipping ' + str(x) +
                               ' no symbol in query result: ' + str(x))
                 logger.error(errors[-1])
                 continue
+
             ensemblstr = 'ensembl:'
+
+            # skips item that lacks anything like this one:
+            # {'query': 'ENSG000001', 'notfound': True}
             if 'ensembl' not in x:
                 errors.append('Skipping ' + str(x) +
                               ' no ensembl in query result: ' + str(x))
@@ -415,11 +458,21 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
 
             ensembl_id = None
 
+            # check if item 'ensembl' has more then 1 element
+            #
+            # {'query': 'ENSG00000273706',
+            #  '_id': '3975', '_score': 24.515644,
+            #  'ensembl': [{'gene': 'ENSG00000273706'},
+            #              {'gene': 'ENSG00000274577'}],
+            #  'symbol': 'LHX1'}
             if len(x['ensembl']) > 1:
                 for g in x['ensembl']:
                     if g['gene'] in g_antibody_dict:
+                        # we need an ensembl id for filename and antibody
+                        # lookup so just grab the 1st one
                         ensembl_id = g['gene']
                         break
+                # concatenate ensembl ids and delimit with ;
                 ensemblstr += ';'.join([g['gene'] for g in x['ensembl']])
             else:
                 ensemblstr += x['ensembl']['gene']
