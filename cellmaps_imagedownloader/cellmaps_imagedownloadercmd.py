@@ -121,6 +121,18 @@ Format of CSV file:
 filename,if_plate_id,position,sample,status,locations,antibody,ensembl_ids,gene_names
 /archive/1/1_A1_1_,1,A1,1,35,Golgi apparatus,HPA000992,ENSG00000066455,GOLGA5
 
+Definition of columns:
+
+* filename - Filename of image (string)
+* if_plate_id - ID of plate for acquired image (int)
+* position - Position in plate for acquired image (string)
+* sample - Sample number identifier for acquired image (int)
+* status - Unknown 
+* locations - Comma delimited list of manual annotations for image (string)
+* antibody - Name of antibody used for acquired image (string)
+* ensembl_ids - Comma delimited list of Ensembl IDs (string)
+* gene_names - Comma delimited list of genes (string)
+
 The downloaded images are stored under the output directory
 specified on the command line in color specific directories
 (red, blue, green, yellow) with name format of: 
@@ -135,6 +147,15 @@ Format of CSV file:
 
 antibody,ensembl_ids,gene_names,atlas_name,locations,n_location
 HPA040086,ENSG00000094914,AAAS,U-2 OS,Nuclear membrane,1
+
+Definition of columns:
+
+* antibody - Name of antibody used for acquired image (string)
+* ensembl_ids - Comma delimited list of ensembl IDs for target protein(s) (string)
+* gene_names - Comma delimited list of gene names for target proteins(s) (string)
+* atlas_name - Cell line (string)
+* locations - Comma delimited list of subcellular locations (string)
+* n_location - Number of subcellular locations (int)
 
 In addition, the --provenance flag is required and must be set to a path 
 to a JSON file. 
