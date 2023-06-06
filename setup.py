@@ -28,8 +28,8 @@ setup_requirements = [ ]
 test_requirements = ['requests_mock']
 
 setup(
-    author="Gege Qian",
-    author_email='geqian@ucsd.edu',
+    author="Ideker Lab CM4AI team",
+    author_email='tools@cm4ai.org',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
