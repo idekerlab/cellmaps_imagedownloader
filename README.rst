@@ -48,7 +48,7 @@ Installation
    git clone https://github.com/idekerlab/cellmaps_imagedownloader
    cd cellmaps_imagedownloader
    make dist
-   pip install dist/cellmaps_imagedownloadercmd*whl
+   pip install dist/cellmaps_imagedownloader*whl
 
 
 Run **make** command with no arguments to see other build/deploy options including creation of Docker image 
