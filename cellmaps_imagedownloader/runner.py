@@ -567,8 +567,8 @@ class CellmapsImageDownloader(object):
 
         :raises CellMapsImageDownloaderError: if image downloader is ``None`` or
                                          if there are failed downloads
-        :return: 0 upon success otherwise, failure
-        :rtype: int
+        :return: (int with value of 0 upon success otherwise failure, list of failed downloads)
+        :rtype: tuple
         """
         if self._imagedownloader is None:
             raise CellMapsImageDownloaderError('Image downloader is None')
@@ -588,7 +588,7 @@ class CellmapsImageDownloader(object):
         if len(failed_downloads) > 0 and (self._skip_failed is None or self._skip_failed is False):
             raise CellMapsImageDownloaderError('Failed to download: ' +
                                                str(len(failed_downloads)) + ' images')
-        return 0
+        return 0, failed_downloads
 
     def get_image_gene_node_attributes_file(self):
         """
@@ -659,7 +659,10 @@ class CellmapsImageDownloader(object):
 
             self._register_image_gene_node_attrs()
 
-            exitcode = self._download_images()
+            exitcode, failed_downloads = self._download_images()
+            # to get the failed images with 404 http error this grep will work:
+            # grep " 404 " output.log  | sed "s/^.*(\'//" | egrep "^http" | sed "s/\'.*//" | sort | uniq
+
             # todo need to validate downloaded image data
 
             # Todo: Right now only registering 2,000 images. need to fix

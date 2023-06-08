@@ -53,6 +53,11 @@ def _parse_arguments(desc, args):
                              'and error message with example of file')
     parser.add_argument('--image_url', default='https://images.proteinatlas.org',
                         help='Base URL for downloading IF images')
+    parser.add_argument('--proteinatlasxml',
+                        default='https://www.proteinatlas.org/download/proteinatlas.xml.gz',
+                        help='URL or path to proteinatlas.xml or proteinatlas.xml.gz file '
+                             'used to look for images not found in the standard location '
+                             'on HPA')
     parser.add_argument('--fake_images', action='store_true',
                         help='If set, 1st image of each color is downloaded '
                              'and subsequent images are just copies of those '
