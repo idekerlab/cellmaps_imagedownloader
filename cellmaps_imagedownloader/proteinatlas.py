@@ -1,3 +1,9 @@
+
+import os
+import gzip
+import requests
+from cellmaps_imagedownloader.exceptions import CellMapsImageDownloaderError
+
 """
 Todo: 1) Write proteinatlas streaming class that takes URL, proteinatlas.xml or
          proteinatlas.xml.gz file and returns data in file, one line at a time
@@ -56,3 +62,46 @@ for image_id in image_id_set:
 
 
 """
+
+
+class ProteinAtlasReader(object):
+    """
+    Returns contents of proteinatlas.xml file one
+    line at a time
+    """
+    def __init__(self, outdir):
+        """
+        Constructor
+        """
+        self._outdir = outdir
+
+    def readline(self, proteinatlas):
+        """
+        Generator that returns next line of proteinatlas.xml file
+
+        :param proteinatlas: URL or path to proteinatlas.xml| proteinatlas.xml.gz file
+        :type proteinatlas: str
+        :return: next line of file
+        :rtype: str
+        """
+        if proteinatlas is None:
+            raise CellMapsImageDownloaderError('proteinatlas is None')
+
+        if os.path.isfile(proteinatlas):
+            if proteinatlas.endswith('.gz'):
+                with gzip.open(proteinatlas, mode='rt') as f:
+                    for line in f.readline():
+                        yield line
+                return
+            with open(proteinatlas, 'r') as f:
+                for line in f.readline():
+                    yield line
+            return
+        # use python requests to download the file and then get its results
+        local_file = os.path.join(self._outdir, proteinatlas.split('/')[-1])
+        with requests.get(proteinatlas, stream=True) as r:
+            r.raise_for_status()
+            with open(local_file, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    f.write(chunk)
+        self.readline(local_file)
