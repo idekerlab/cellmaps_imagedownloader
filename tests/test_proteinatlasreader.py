@@ -6,6 +6,9 @@ import os
 import unittest
 import tempfile
 import shutil
+import gzip
+import requests
+import requests_mock
 
 
 from cellmaps_imagedownloader.proteinatlas import ProteinAtlasReader
@@ -33,9 +36,63 @@ class TestProteinAtlasReader(unittest.TestCase):
                 f.write('line1\n')
                 f.write('line2\n')
                 f.write('line3\n')
-            res = [a for a in reader.readline(proteinatlas_file)]
-            self.assertEqual([], res)
 
-
+            res = set([a for a in reader.readline(proteinatlas_file)])
+            self.assertEqual(3, len(res))
+            self.assertTrue('line1\n' in res)
+            self.assertTrue('line2\n' in res)
+            self.assertTrue('line3\n' in res)
         finally:
             shutil.rmtree(temp_dir)
+
+    def test_readline_with_standard_gzip_file(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            reader = ProteinAtlasReader(temp_dir)
+            proteinatlas_file = os.path.join(temp_dir, 'proteinatlas.xml.gz')
+            with gzip.open(proteinatlas_file, 'wt') as f:
+                f.write('line1\n')
+                f.write('line2\n')
+                f.write('line3\n')
+
+            res = set([a for a in reader.readline(proteinatlas_file)])
+            self.assertEqual(3, len(res))
+            self.assertTrue('line1\n' in res)
+            self.assertTrue('line2\n' in res)
+            self.assertTrue('line3\n' in res)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_readline_with_gzip_url(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            reader = ProteinAtlasReader(temp_dir)
+            proteinatlas_file = os.path.join(temp_dir, 'source.xml.gz')
+            with gzip.open(proteinatlas_file, 'wt') as f:
+                f.write('line1\n')
+                f.write('line2\n')
+                f.write('line3\n')
+
+            with requests_mock.Mocker() as m:
+                with open(proteinatlas_file, 'rb') as gzfile:
+                    p_url = 'https://hpa/proteinatlas.xml.gz'
+                    m.get(p_url, body=gzfile)
+                    res = set([a for a in reader.readline(p_url)])
+                    self.assertEqual(3, len(res))
+                    self.assertTrue('line1\n' in res)
+                    self.assertTrue('line2\n' in res)
+                    self.assertTrue('line3\n' in res)
+        finally:
+            shutil.rmtree(temp_dir)
+
+    """
+    # @unittest.skipUnless(os.getenv('CELLMAPS_IMAGEDOWNLOADER_INTEGRATION_TEST') is not None, SKIP_REASON)
+    def test_real_download_of_url(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            reader = ProteinAtlasReader(temp_dir)
+            for line in reader.readline('https://www.proteinatlas.org/download/proteinatlas.xml.gz'):
+                print(line)
+        finally:
+            shutil.rmtree(temp_dir)
+    """
