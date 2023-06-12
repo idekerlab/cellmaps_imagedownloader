@@ -355,7 +355,7 @@ class CellmapsImageDownloader(object):
                                                                     file_format='.py',
                                                                     url=cellmaps_imagedownloader.__repo_url__)
 
-    def _register_image_gene_node_attrs(self):
+    def _register_image_gene_node_attrs(self, fold=1):
         """
         Registers image_gene_node_attributes.tsv file with create as a dataset
 
@@ -367,7 +367,7 @@ class CellmapsImageDownloader(object):
                      'version': cellmaps_imagedownloader.__version__,
                      'date-published': date.today().strftime('%m-%d-%Y')}
         self._image_gene_attrid = self._provenance_utils.register_dataset(self._outdir,
-                                                                          source_file=self.get_image_gene_node_attributes_file(),
+                                                                          source_file=self.get_image_gene_node_attributes_file(fold),
                                                                           data_dict=data_dict)
 
     def _add_dataset_to_crate(self, data_dict=None,
@@ -590,7 +590,7 @@ class CellmapsImageDownloader(object):
                                                str(len(failed_downloads)) + ' images')
         return 0
 
-    def get_image_gene_node_attributes_file(self):
+    def get_image_gene_node_attributes_file(self, fold):
         """
         Gets full path to image gene node attribute file under output directory
         created when invoking :py:meth:`~cellmaps_imagedownloader.runner.CellmapsImageDownloader.run`
@@ -598,7 +598,7 @@ class CellmapsImageDownloader(object):
         :return: Path to file
         :rtype: str
         """
-        return os.path.join(self._outdir,
+        return os.path.join(self._outdir, str(fold) + '_' +
                             constants.IMAGE_GENE_NODE_ATTR_FILE)
 
     def get_image_gene_node_errors_file(self):
@@ -612,7 +612,7 @@ class CellmapsImageDownloader(object):
         return os.path.join(self._outdir,
                             constants.IMAGE_GENE_NODE_ERRORS_FILE)
 
-    def _write_image_gene_node_attrs(self, gene_node_attrs=None,
+    def _write_image_gene_node_attrs(self, gene_node_attrs=None, fold=1,
                                      errors=None):
         """
 
@@ -620,7 +620,7 @@ class CellmapsImageDownloader(object):
         :param errors:
         :return:
         """
-        with open(self.get_image_gene_node_attributes_file(), 'w', newline='') as f:
+        with open(self.get_image_gene_node_attributes_file(fold), 'w', newline='') as f:
             writer = csv.DictWriter(f, fieldnames=constants.IMAGE_GENE_NODE_COLS, delimiter='\t')
             writer.writeheader()
             for key in gene_node_attrs:
@@ -652,12 +652,13 @@ class CellmapsImageDownloader(object):
             self._register_software()
 
             # write image attribute data
-            image_gene_node_attrs, errors = self._imagegen.get_gene_node_attributes()
+            for fold in [1, 2]:
+                image_gene_node_attrs, errors = self._imagegen.get_gene_node_attributes(fold)
 
-            # write image attribute data
-            self._write_image_gene_node_attrs(image_gene_node_attrs, errors)
+                # write image attribute data
+                self._write_image_gene_node_attrs(image_gene_node_attrs, fold, errors)
 
-            self._register_image_gene_node_attrs()
+                self._register_image_gene_node_attrs(fold)
 
             exitcode = self._download_images()
             # todo need to validate downloaded image data

@@ -84,38 +84,6 @@ class GeneNodeAttributeGenerator(object):
         """
         pass
 
-    @staticmethod
-    def add_geneids_to_set(gene_set=None,
-                           ambiguous_gene_dict=None,
-                           geneid=None):
-        """
-        Examines **geneid** passed in and if a comma exists
-        in value split by comma and assume multiple genes.
-        Adds those genes into **gene_set** and add entry
-        to **ambiguous_gene_dict** with key set to each gene
-        name and value set to original **geneid** value
-
-        :param gene_set: unique set of genes
-        :type gene_set: set
-        :param geneid: name of gene or comma delimited string of genes
-        :type geneid: str
-        :return: genes found in **geneid** or None if **gene_set**
-                 or **geneid** is ``None``
-        :rtype: list
-        """
-        if gene_set is None:
-            return None
-        if geneid is None:
-            return None
-
-        split_str = re.split('\W*,\W*', geneid)
-        gene_set.update(split_str)
-        if ambiguous_gene_dict is not None:
-            if len(split_str) > 1:
-                for entry in split_str:
-                    ambiguous_gene_dict[entry] = geneid
-        return split_str
-
     def get_gene_node_attributes(self):
         """
         Should be implemented by subclasses
@@ -285,6 +253,39 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                 u_list.append(unique_entry)
         return u_list
 
+    def _get_unique_ids_from_samplelist(self, column='ensembl_ids'):
+        """
+        Gets a unique list of ids split by comma from the samples
+        under **column**. In addition a dict is also created where
+        key is split id and value is original unsplit values
+
+        For example for a sample with these values and column set to ``ensembl_ids``:
+
+        .. code-block:: python
+
+            {'ensembl_ids': 'ENSG00000240682,ENSG00000261796'}
+
+        The resulting tuple would be:
+
+        .. code-block:: python
+
+            (['ENSG00000240682', 'ENSG00000261796'],
+             {'ENSG00000240682': 'ENSG00000240682,ENSG00000261796',
+              'ENSG00000261796': 'ENSG00000240682,ENSG00000261796'})
+
+        :return: (list of ids, dict where key is id and value is original unsplit value)
+        :rtype: tuple
+        """
+        id_set = set()
+
+        for row in self._samples_list:
+            geneid=row[column]
+            split_str = re.split('\W*,\W*', geneid)
+            id_set.update(split_str)
+
+        return list(id_set)
+    
+    
     def _get_set_of_antibodies_from_unique_list(self):
         """
         Extract a unique set of antibodies from antibodies list
@@ -317,59 +318,35 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
             raise CellMapsImageDownloaderError('samples list is None')
 
         g_antibody_dict = {}
-        g_filename_dict = {}
-
+        antibody_filename_dict = {}
+        ambiguous_antibody_dict = {}
+        
         for sample in self._samples_list:
-            if allowed_antibodies is not None and sample['antibody'] not in allowed_antibodies:
+            antibody = sample['antibody']
+            if allowed_antibodies is not None and antibody not in allowed_antibodies:
                 # skipping cause antibody is not in allowed set
                 continue
 
             ensembl_ids = sample['ensembl_ids'].split(',')
+            if len(ensembl_ids) > 1:
+                ambiguous_antibody_dict[antibody] = sample['ensembl_ids']
+            
+            if antibody not in antibody_filename_dict:
+                antibody_filename_dict[antibody] = set()
+            antibody_filename_dict[antibody].add(sample['if_plate_id'] + '_' +
+                                   sample['position'] + '_' +
+                                   sample['sample'] + '_')
             for g in ensembl_ids:
-                if g not in g_antibody_dict:
-                    g_antibody_dict[g] = set()
-                if g not in g_filename_dict:
-                    g_filename_dict[g] = set()
-                g_antibody_dict[g].add(sample['antibody'])
-                g_filename_dict[g].add(sample['if_plate_id'] + '_' +
-                                       sample['position'] + '_' +
-                                       sample['sample'] + '_')
+                #if gene already has nonambgiuous antibody, use that one
+                if g in g_antibody_dict:
+                    if g in ambiguous_antibody_dict:
+                        continue
+                g_antibody_dict[g] = sample['antibody']
+              
+        return g_antibody_dict, antibody_filename_dict, ambiguous_antibody_dict
 
-        return g_antibody_dict, g_filename_dict
 
-    def _get_unique_ids_from_samplelist(self, column='ensembl_ids'):
-        """
-        Gets a unique list of ids split by comma from the samples
-        under **column**. In addition a dict is also created where
-        key is split id and value is original unsplit values
-
-        For example for a sample with these values and column set to ``ensembl_ids``:
-
-        .. code-block:: python
-
-            {'ensembl_ids': 'ENSG00000240682,ENSG00000261796'}
-
-        The resulting tuple would be:
-
-        .. code-block:: python
-
-            (['ENSG00000240682', 'ENSG00000261796'],
-             {'ENSG00000240682': 'ENSG00000240682,ENSG00000261796',
-              'ENSG00000261796': 'ENSG00000240682,ENSG00000261796'})
-
-        :return: (list of ids, dict where key is id and value is original unsplit value)
-        :rtype: tuple
-        """
-        id_set = set()
-        ambiguous_id_dict = {}
-
-        for row in self._samples_list:
-            GeneNodeAttributeGenerator.add_geneids_to_set(gene_set=id_set,
-                                                          ambiguous_gene_dict=ambiguous_id_dict,
-                                                          geneid=row[column])
-        return list(id_set), ambiguous_id_dict
-
-    def get_gene_node_attributes(self):
+    def get_gene_node_attributes(self, fold=1):
         """
         Using **samples_list** and **unique_list**, builds
         a list of :py:class:`dict` objects with updated Gene Symbols.
@@ -404,7 +381,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
 
         t.update()
         # get the unique set of ensembl_ids for mygene query
-        ensembl_id_list, _ = self._get_unique_ids_from_samplelist()
+        ensembl_id_list = self._get_unique_ids_from_samplelist()
 
         t.update()
 
@@ -419,17 +396,15 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                                                           scopes='ensembl.gene')
 
         t.update()
-        # get mapping of ambiguous genes
-        _, ambiguous_gene_dict = self._get_unique_ids_from_samplelist(column='gene_names')
 
-        t.update()
         # get the unique or best antibodies to use
         unique_antibodies = self._get_set_of_antibodies_from_unique_list()
 
         t.update()
         # create a mapping of ensembl id to antibody and ensembl_id to filenames
         # where entries NOT in unique_antibodies are filtered out
-        g_antibody_dict, g_filename_dict = self.get_dicts_of_gene_to_antibody_filename(allowed_antibodies=unique_antibodies)
+        # get mapping of ambiguous genes
+        g_antibody_dict, antibody_filename_dict, ambiguous_antibody_dict = self.get_dicts_of_gene_to_antibody_filename(allowed_antibodies=unique_antibodies)
 
         errors = []
         gene_node_attrs = {}
@@ -477,13 +452,18 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
             else:
                 ensemblstr += x['ensembl']['gene']
                 ensembl_id = x['ensembl']['gene']
+                
+            antibody_str = g_antibody_dict[ensembl_id]
 
-            filename_str = ','.join(list(g_filename_dict[ensembl_id]))
-            antibody_str = ','.join(list(g_antibody_dict[ensembl_id]))
-
+            filenames = list(antibody_filename_dict[antibody_str])
+            if len(filenames) < fold:
+                filename_str = filenames[0]
+            else: 
+                filename_str = filenames[fold - 1]
+                
             ambiguous_str = ''
-            if x['symbol'] in ambiguous_gene_dict:
-                ambiguous_str = ambiguous_gene_dict[x['symbol']]
+            if antibody_str in ambiguous_antibody_dict:
+                ambiguous_str = ambiguous_antibody_dict[antibody_str]
 
             gene_node_attrs[x['query']] = {'name': x['symbol'],
                                            'represents': ensemblstr,
