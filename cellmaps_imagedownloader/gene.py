@@ -256,8 +256,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
     def _get_unique_ids_from_samplelist(self, column='ensembl_ids'):
         """
         Gets a unique list of ids split by comma from the samples
-        under **column**. In addition a dict is also created where
-        key is split id and value is original unsplit values
+        under **column**.
 
         For example for a sample with these values and column set to ``ensembl_ids``:
 
@@ -269,12 +268,10 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
 
         .. code-block:: python
 
-            (['ENSG00000240682', 'ENSG00000261796'],
-             {'ENSG00000240682': 'ENSG00000240682,ENSG00000261796',
-              'ENSG00000261796': 'ENSG00000240682,ENSG00000261796'})
+            ['ENSG00000240682', 'ENSG00000261796']
 
-        :return: (list of ids, dict where key is id and value is original unsplit value)
-        :rtype: tuple
+        :return: split values from corresponding **column** in samples list
+        :rtype: list
         """
         id_set = set()
 
@@ -284,14 +281,13 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
             id_set.update(split_str)
 
         return list(id_set)
-    
-    
+
     def _get_set_of_antibodies_from_unique_list(self):
         """
         Extract a unique set of antibodies from antibodies list
         passed in via constructor
 
-        :return:
+        :return: unique antibodies
         :rtype: set
         """
         if self._unique_list is None:
@@ -308,11 +304,18 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
 
     def get_dicts_of_gene_to_antibody_filename(self, allowed_antibodies=None):
         """
-        Gets a dictionary where key is ensembl id and value is
-        the file_name value
+        Gets a tuple of dictionaries from the sample list passed in via
+        the constructor.
 
-        :return:
-        :rtype: dict
+
+        :param allowed_antibodies: Skip samples whose antibody is NOT in this list.
+                                   If ``None`` then all samples are included
+        :type allowed_antibodies: list or set
+        :return: (:py:class:`dict` of ensembl_id => antibody,
+                  :py:class:`dict` of antibody => filename,
+                  :py:class:`dict` of antibody => comma delimited ambiguous ensembl_ids)
+
+        :rtype: tuple
         """
         if self._samples_list is None:
             raise CellMapsImageDownloaderError('samples list is None')
@@ -344,7 +347,6 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                 g_antibody_dict[g] = sample['antibody']
               
         return g_antibody_dict, antibody_filename_dict, ambiguous_antibody_dict
-
 
     def get_gene_node_attributes(self, fold=1):
         """

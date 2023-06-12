@@ -155,9 +155,10 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
 
         # test where samples list is empty
         imagegen = ImageGeneNodeAttributeGenerator(samples_list=[])
-        antibody_dict, filename_dict = imagegen.get_dicts_of_gene_to_antibody_filename()
+        antibody_dict, filename_dict, ambig_dict = imagegen.get_dicts_of_gene_to_antibody_filename()
         self.assertEqual({}, antibody_dict)
         self.assertEqual({}, filename_dict)
+        self.assertEqual({}, ambig_dict)
 
         # test two samples
         samples = [{'ensembl_ids': 'ensemble_one',
@@ -165,34 +166,38 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
                     'if_plate_id': '1',
                     'position': 'A1',
                     'sample': '2'},
-                   {'ensembl_ids': 'ensemble_two',
+                   {'ensembl_ids': 'ensemble_two,ensemble_three',
                     'antibody': 'antibody_two',
                     'if_plate_id': '3',
                     'position': 'B1',
                     'sample': '4'}]
         imagegen = ImageGeneNodeAttributeGenerator(samples_list=samples)
-        antibody_dict, filename_dict = imagegen.get_dicts_of_gene_to_antibody_filename()
-        self.assertEqual({'ensemble_one': {'antibody_one'},
-                          'ensemble_two': {'antibody_two'}}, antibody_dict)
-        self.assertEqual({'ensemble_one': {'1_A1_2_'},
-                          'ensemble_two': {'3_B1_4_'}}, filename_dict)
+        antibody_dict, filename_dict, ambig_dict = imagegen.get_dicts_of_gene_to_antibody_filename()
+        self.assertEqual(3, len(antibody_dict.keys()))
 
-        # run again this time limit two antibody_two
-        antibody_dict, filename_dict = imagegen.get_dicts_of_gene_to_antibody_filename(allowed_antibodies={'antibody_two'})
-        self.assertEqual({'ensemble_two': {'antibody_two'}}, antibody_dict)
-        self.assertEqual({'ensemble_two': {'3_B1_4_'}}, filename_dict)
+        self.assertEqual('antibody_one', antibody_dict['ensemble_one'])
+        self.assertEqual('antibody_two', antibody_dict['ensemble_two'])
+        self.assertEqual('antibody_two', antibody_dict['ensemble_three'])
+
+        self.assertEqual({'antibody_one': {'1_A1_2_'},
+                          'antibody_two': {'3_B1_4_'}}, filename_dict)
+        self.assertEqual({'antibody_two': 'ensemble_two,ensemble_three'}, ambig_dict)
+
+        # run again this time limit to antibody_two
+        antibody_dict, filename_dict, ambig_dict = imagegen.get_dicts_of_gene_to_antibody_filename(allowed_antibodies={'antibody_two'})
+        self.assertEqual({'ensemble_two': 'antibody_two',
+                          'ensemble_three': 'antibody_two'}, antibody_dict)
+        self.assertEqual({'antibody_two': {'3_B1_4_'}}, filename_dict)
 
     def test_get_unique_ids_from_samplelist(self):
 
         samples = [{'ensembl_ids': 'ENSG01,ENSG02'}]
 
         imagegen = ImageGeneNodeAttributeGenerator(samples_list=samples)
-        id_set, ambiguous_id_dict = imagegen._get_unique_ids_from_samplelist()
+        id_set = imagegen._get_unique_ids_from_samplelist()
         self.assertTrue(2, len(id_set))
         self.assertTrue('ENSG02' in id_set)
         self.assertTrue('ENSG01' in id_set)
-        self.assertEqual({'ENSG01': 'ENSG01,ENSG02',
-                          'ENSG02': 'ENSG01,ENSG02'}, ambiguous_id_dict)
 
     def test_get_gene_node_attributes_simple(self):
         samples = [{'if_plate_id': '1',
@@ -250,8 +255,8 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
         self.assertTrue('ENSG00000066455' in gene_node_attrs)
         self.assertEqual('GOLGA5', gene_node_attrs['ENSG00000066455']['name'])
         self.assertEqual('ensembl:ENSG00000066455', gene_node_attrs['ENSG00000066455']['represents'])
-        self.assertTrue(gene_node_attrs['ENSG00000066455']['filename'] == '1_A1_2_,1_A1_1_' or
-                        gene_node_attrs['ENSG00000066455']['filename'] == '1_A1_1_,1_A1_2_')
+        self.assertTrue(gene_node_attrs['ENSG00000066455']['filename'] == '1_A1_2_' or
+                        gene_node_attrs['ENSG00000066455']['filename'] == '1_A1_1_')
 
         self.assertTrue('ENSG00000183092' in gene_node_attrs)
 
