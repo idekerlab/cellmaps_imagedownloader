@@ -2,17 +2,10 @@
 # -*- coding: utf-8 -*-
 
 """Tests for `ProteinAtlasImageUrlReader` package."""
-import os
 import unittest
-import tempfile
-import shutil
-import gzip
-import requests
-import requests_mock
-
+from unittest.mock import MagicMock
 
 from cellmaps_imagedownloader.proteinatlas import ProteinAtlasImageUrlReader
-from cellmaps_imagedownloader.proteinatlas import ProteinAtlasReader
 
 SKIP_REASON = 'CELLMAPS_IMAGEDOWNLOADER_INTEGRATION_TEST ' \
               'environment variable not set, cannot run integration ' \
@@ -39,5 +32,26 @@ class TestProteinAtlasImageUrlReader(unittest.TestCase):
         self.assertEqual('39292/1495_A11_1_',
                          reader._get_image_id('http://images.proteinatlas.org/39292/1495_A11_1_blue_red_green.jpg'))
 
+    def test_get_next_image_id_and_url(self):
+        mockreader = MagicMock()
+        mockreader.readline = MagicMock()
 
+        def fake_generator():
+            lines = ['http://images.proteinatlas.org/4109/1843_B2_17_blue\n',
+                     '  <imageUrl>http://images.proteinatlas.org/4109/1843_B2_17_cr5af971a263864_selected.jpg</imageUrl>\n',
+                     '<imageUrl>http://images.proteinatlas.org/4109/1832_C1_2_blue_red_green.jpg</imageUrl> \n',
+                     '<imageUrl>http://images.proteinatlas.org/4109/1843_B2_17_cr5af971a263864_blue_red_green.jpg</imageUrl>']
+
+            yield from lines
+
+        mockreader.readline.side_effect = fake_generator
+        reader = ProteinAtlasImageUrlReader()
+        res = [a for a in reader.get_next_image_id_and_url(reader=mockreader)]
+        self.assertEqual(2, len(res))
+        self.assertEqual(('4109/1832_C1_2_',
+                          'http://images.proteinatlas.org/4109/1832_C1_2_blue_'
+                          'red_green.jpg'), res[0])
+        self.assertEqual(('4109/1843_B2_17_cr5af971a263864_',
+                          'http://images.proteinatlas.org/4109/1843_B2_17_'
+                          'cr5af971a263864_blue_red_green.jpg'), res[1])
 

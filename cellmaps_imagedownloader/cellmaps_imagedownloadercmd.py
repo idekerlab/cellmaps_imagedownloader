@@ -14,6 +14,10 @@ from cellmaps_imagedownloader.runner import MultiProcessImageDownloader
 from cellmaps_imagedownloader.runner import FakeImageDownloader
 from cellmaps_imagedownloader.runner import CellmapsImageDownloader
 from cellmaps_imagedownloader.gene import ImageGeneNodeAttributeGenerator
+from cellmaps_imagedownloader.proteinatlas import ProteinAtlasReader
+from cellmaps_imagedownloader.proteinatlas import ProteinAtlasImageUrlReader
+from cellmaps_imagedownloader.proteinatlas import ImageDownloadTupleGenerator
+
 
 logger = logging.getLogger(__name__)
 
@@ -210,6 +214,10 @@ Additional optional fields for registering datasets include
         else:
             dloader = MultiProcessImageDownloader(poolsize=theargs.poolsize,
                                                   skip_existing=theargs.skip_existing)
+
+        proteinatlas_reader = ProteinAtlasReader(theargs.outdir)
+        proteinatlas_urlreader = ProteinAtlasImageUrlReader()
+
         return CellmapsImageDownloader(outdir=theargs.outdir,
                                        imagedownloader=dloader,
                                        imgsuffix=theargs.imgsuffix,

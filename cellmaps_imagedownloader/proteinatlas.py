@@ -78,11 +78,14 @@ class ProteinAtlasImageUrlReader(object):
     with the keyword _blue in them
     """
 
-    def __init__(self):
+    def __init__(self, reader=None):
         """
         Constructor
+
+        :param reader:
+        :type reader: :py:class:`~cellmaps_imagedownloader.proteinatlas.ProteinAtlasReader`
         """
-        pass
+        self._reader = reader
 
     def _get_url_from_line(self, line):
         """
@@ -105,21 +108,19 @@ class ProteinAtlasImageUrlReader(object):
         antibody_and_id = '/'.join(image_url.split('/')[-2:])
         return antibody_and_id[:antibody_and_id.index('_blue')+1]
 
-    def get_next_image_id_and_url(self, reader=None):
+    def get_next_image_id_and_url(self):
         """
 
-        :param reader:
-        :type reader: :py:class:`~cellmaps_imagedownloader.proteinatlas.ProteinAtlasReader`
         :return: (image id, image_url)
         :rtype: tuple
         """
-        for line in reader.readline():
+        for line in self._reader.readline():
             line = line.rstrip()
             if '<imageUrl>' not in line:
                 continue
             if 'blue' not in line:
                 continue
-            image_url = self._get_url_from_line()
+            image_url = self._get_url_from_line(line)
             yield self._get_image_id(image_url), image_url
 
 
@@ -156,8 +157,8 @@ class ImageDownloadTupleGenerator(object):
         :return: (image url prefix, suffix ie .jpg)
         :rtype: tuple
         """
-        prefix = image_url[:image_url.index(['_blue'])+1]
-        suffix = image_url[image_url.rindex('.')-1:]
+        prefix = image_url[:image_url.index('_blue')+1]
+        suffix = image_url[image_url.rindex('.'):]
         return prefix, suffix
 
     def get_next_image_url(self, color_download_map=None):
@@ -169,13 +170,18 @@ class ImageDownloadTupleGenerator(object):
         :rtype: list
         """
         for sample in self._samples_list:
-            image_id = sample['antibody'] + '/' + sample['if_plate_id'] +\
+            image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' +\
+                       sample['if_plate_id'] +\
                        '_' + sample['position'] +\
                        '_' + sample['sample'] + '_'
             if image_id not in self._sample_urlmap:
                 logger.error(image_id + ' not in sample map')
+                continue
             for c in constants.COLORS:
-                image_url_prefix, image_suffix = self._get_image_prefix_suffix(self._sample_urlmap[image_id])
+                sample_url = self._sample_urlmap[image_id]
+                (image_url_prefix,
+                 image_suffix) = self._get_image_prefix_suffix(sample_url)
 
-                yield image_url_prefix + '_' + c + image_suffix, os.path.join(color_download_map[c],
-                                                                              image_id + c + image_suffix)
+                yield (image_url_prefix + c + image_suffix,
+                       os.path.join(color_download_map[c],
+                                    image_id + c + image_suffix))
