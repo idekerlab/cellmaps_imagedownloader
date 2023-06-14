@@ -204,7 +204,6 @@ Additional optional fields for registering datasets include
         # load the provenance as a dict
         with open(theargs.provenance, 'r') as f:
             json_prov = json.load(f)
-
         imagegen = ImageGeneNodeAttributeGenerator(unique_list=ImageGeneNodeAttributeGenerator.get_unique_list_from_csvfile(theargs.unique),
                                                    samples_list=ImageGeneNodeAttributeGenerator.get_samples_from_csvfile(theargs.samples))
 
@@ -215,14 +214,15 @@ Additional optional fields for registering datasets include
             dloader = MultiProcessImageDownloader(poolsize=theargs.poolsize,
                                                   skip_existing=theargs.skip_existing)
 
-        proteinatlas_reader = ProteinAtlasReader(theargs.outdir)
-        proteinatlas_urlreader = ProteinAtlasImageUrlReader()
-
+        proteinatlas_reader = ProteinAtlasReader(theargs.outdir, proteinatlas=theargs.proteinatlasxml)
+        proteinatlas_urlreader = ProteinAtlasImageUrlReader(reader=proteinatlas_reader)
+        imageurlgen = ImageDownloadTupleGenerator(reader=proteinatlas_urlreader,
+                                                  samples_list=imagegen.get_samples_list())
         return CellmapsImageDownloader(outdir=theargs.outdir,
                                        imagedownloader=dloader,
                                        imgsuffix=theargs.imgsuffix,
                                        imagegen=imagegen,
-                                       image_url=theargs.image_url,
+                                       imageurlgen=imageurlgen,
                                        skip_logging=theargs.skip_logging,
                                        input_data_dict=theargs.__dict__,
                                        provenance=json_prov,

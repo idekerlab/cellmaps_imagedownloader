@@ -45,8 +45,8 @@ class TestProteinAtlasImageUrlReader(unittest.TestCase):
             yield from lines
 
         mockreader.readline.side_effect = fake_generator
-        reader = ProteinAtlasImageUrlReader()
-        res = [a for a in reader.get_next_image_id_and_url(reader=mockreader)]
+        reader = ProteinAtlasImageUrlReader(reader=mockreader)
+        res = [a for a in reader.get_next_image_id_and_url()]
         self.assertEqual(2, len(res))
         self.assertEqual(('4109/1832_C1_2_',
                           'http://images.proteinatlas.org/4109/1832_C1_2_blue_'

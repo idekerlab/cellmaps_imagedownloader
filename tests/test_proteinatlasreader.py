@@ -30,14 +30,16 @@ class TestProteinAtlasReader(unittest.TestCase):
     def test_readline_with_standard_txt_file(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            reader = ProteinAtlasReader(temp_dir)
+
             proteinatlas_file = os.path.join(temp_dir, 'proteinatlas.xml')
             with open(proteinatlas_file, 'w') as f:
                 f.write('line1\n')
                 f.write('line2\n')
                 f.write('line3\n')
+            reader = ProteinAtlasReader(outdir=temp_dir,
+                                        proteinatlas=proteinatlas_file)
 
-            res = set([a for a in reader.readline(proteinatlas_file)])
+            res = set([a for a in reader.readline()])
             self.assertEqual(3, len(res))
             self.assertTrue('line1\n' in res)
             self.assertTrue('line2\n' in res)
@@ -48,14 +50,16 @@ class TestProteinAtlasReader(unittest.TestCase):
     def test_readline_with_standard_gzip_file(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            reader = ProteinAtlasReader(temp_dir)
             proteinatlas_file = os.path.join(temp_dir, 'proteinatlas.xml.gz')
             with gzip.open(proteinatlas_file, 'wt') as f:
                 f.write('line1\n')
                 f.write('line2\n')
                 f.write('line3\n')
 
-            res = set([a for a in reader.readline(proteinatlas_file)])
+            reader = ProteinAtlasReader(outdir=temp_dir,
+                                        proteinatlas=proteinatlas_file)
+
+            res = set([a for a in reader.readline()])
             self.assertEqual(3, len(res))
             self.assertTrue('line1\n' in res)
             self.assertTrue('line2\n' in res)
@@ -66,7 +70,6 @@ class TestProteinAtlasReader(unittest.TestCase):
     def test_readline_with_gzip_url(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            reader = ProteinAtlasReader(temp_dir)
             proteinatlas_file = os.path.join(temp_dir, 'source.xml.gz')
             with gzip.open(proteinatlas_file, 'wt') as f:
                 f.write('line1\n')
@@ -77,7 +80,9 @@ class TestProteinAtlasReader(unittest.TestCase):
                 with open(proteinatlas_file, 'rb') as gzfile:
                     p_url = 'https://hpa/proteinatlas.xml.gz'
                     m.get(p_url, body=gzfile)
-                    res = set([a for a in reader.readline(p_url)])
+                    reader = ProteinAtlasReader(outdir=temp_dir,
+                                                proteinatlas=p_url)
+                    res = set([a for a in reader.readline()])
                     self.assertEqual(3, len(res))
                     self.assertTrue('line1\n' in res)
                     self.assertTrue('line2\n' in res)

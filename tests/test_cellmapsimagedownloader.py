@@ -171,36 +171,38 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
-    def test_get_download_tuples_from_csv(self):
+    def test_get_color_download_map(self):
         temp_dir = tempfile.mkdtemp()
         try:
-            samples = [{'if_plate_id': '1',
-                        'position': 'A1',
-                        'sample': '1',
-                        'antibody': 'HPA000992'},
-                       {'if_plate_id': '2',
-                        'position': 'A3',
-                        'sample': '4',
-                        'antibody': 'HPA000992'}
-                       ]
-
-            imagegen = ImageGeneNodeAttributeGenerator(samples_list=samples)
-
-            link = 'http://foo'
-            suffix = '.jpg'
-            crunner = CellmapsImageDownloader(outdir=temp_dir,
-                                              image_url=link,
-                                              imgsuffix=suffix,
-                                              imagegen=imagegen)
-            dtuples = crunner._get_download_tuples_from_csv()
-
-            self.assertEqual(8, len(dtuples))
+            run_dir = os.path.abspath(os.path.join(temp_dir, 'run'))
+            crunner = CellmapsImageDownloader(outdir=run_dir)
+            res = crunner._get_color_download_map()
+            self.assertEqual(4, len(res))
             for c in constants.COLORS:
-                for fname in ['1_A1_1_', '2_A3_4_']:
-                    self.assertTrue((link + '/992/' + fname + c + suffix,
-                                     os.path.join(temp_dir, c,
-                                                  fname +
-                                                  c + suffix)) in dtuples)
+                self.assertTrue(os.path.join(run_dir, c) in res[c])
+        finally:
+            shutil.rmtree(temp_dir)
 
+    def test_get_download_tuples(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            imageurlgen = MagicMock()
+            imageurlgen.get_next_image_url = MagicMock()
+
+            def fake_gen(color_map):
+                for line in [('url1', '/url1'),
+                             ('url2', '/url2')]:
+                    yield line
+
+            imageurlgen.get_next_image_url.side_effect = fake_gen
+
+            run_dir = os.path.abspath(os.path.join(temp_dir, 'run'))
+            crunner = CellmapsImageDownloader(outdir=run_dir,
+                                              imageurlgen=imageurlgen)
+            res = crunner._get_download_tuples()
+            self.assertEqual(2, len(res))
+
+            self.assertTrue(('url1', '/url1') in res)
+            self.assertTrue(('url2', '/url2') in res)
         finally:
             shutil.rmtree(temp_dir)

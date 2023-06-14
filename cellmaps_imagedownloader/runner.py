@@ -108,7 +108,8 @@ class FakeImageDownloader(ImageDownloader):
     is used to download the first image of each color
 
     """
-    def __abs__(self):
+
+    def __init__(self):
         """
         Constructor
 
@@ -239,7 +240,7 @@ class CellmapsImageDownloader(object):
                  imgsuffix='.jpg',
                  imagedownloader=MultiProcessImageDownloader(),
                  imagegen=None,
-                 image_url='https://images.proteinatlas.org',
+                 imageurlgen=None,
                  skip_logging=False,
                  provenance=None,
                  input_data_dict=None,
@@ -277,7 +278,7 @@ class CellmapsImageDownloader(object):
         self._start_time = int(time.time())
         self._end_time = -1
         self._imagegen = imagegen
-        self._image_url = image_url
+        self._imageurlgen = imageurlgen
         self._provenance = provenance
         self._input_data_dict = input_data_dict
         if skip_logging is None:
@@ -500,31 +501,18 @@ class CellmapsImageDownloader(object):
             color_d_map[c] = os.path.join(self._outdir, c)
         return color_d_map
 
-    def _get_sample_url_and_filename(self, sample=None, color=None):
+    def _get_download_tuples(self):
         """
-
-        :param sample:
-        :return:
-        """
-        file_name = sample['if_plate_id'] + '_' + sample['position'] + '_' + sample['sample'] + '_' + color + self._imgsuffix
-        return self._image_url + '/' + re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' + file_name, file_name
-
-    def _get_download_tuples_from_csv(self):
-        """
-        Gets download list from CSV file for the 4 colors
+        Gets download list from **imageurlgen** object set via constructor
 
         :return: list of (image download URL prefix,
                           file path where image should be written)
         :rtype: list
         """
         dtuples = []
-
-        color_d_map = self._get_color_download_map()
-        for row in self._imagegen.get_samples_list():
-            for c in constants.COLORS:
-                image_url, file_name = self._get_sample_url_and_filename(sample=row, color=c)
-                dtuples.append((image_url,
-                                os.path.join(color_d_map[c], file_name)))
+        color_map = self._get_color_download_map()
+        for image_url, image_dest in self._imageurlgen.get_next_image_url(color_map):
+            dtuples.append((image_url, image_dest))
         return dtuples
 
     def _write_task_start_json(self):
@@ -573,7 +561,7 @@ class CellmapsImageDownloader(object):
         if self._imagedownloader is None:
             raise CellMapsImageDownloaderError('Image downloader is None')
 
-        downloadtuples = self._get_download_tuples_from_csv()
+        downloadtuples = self._get_download_tuples()
 
         failed_downloads = self._imagedownloader.download_images(downloadtuples)
         retry_count = 0

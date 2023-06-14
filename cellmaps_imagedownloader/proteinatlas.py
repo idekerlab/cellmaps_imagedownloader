@@ -18,17 +18,36 @@ class ProteinAtlasReader(object):
     Returns contents of proteinatlas.xml file one
     line at a time
     """
-    def __init__(self, outdir):
+    def __init__(self, outdir=None,
+                 proteinatlas=None):
         """
         Constructor
+
+        :param outdir: Path to directory where results can be written to
+        :type outdir: str
+        :param proteinatlas: URL or path to proteinatlas.xml| proteinatlas.xml.gz file
+        :type proteinatlas: str
         """
         self._outdir = outdir
+        self._proteinatlas = proteinatlas
 
-    def readline(self, proteinatlas):
+    def readline(self):
         """
-        Generator that returns next line of proteinatlas.xml file
+        Generator that returns next line of proteinatlas data
+        set via constructor
 
-        :param proteinatlas: URL or path to proteinatlas.xml| proteinatlas.xml.gz file
+        :return: next line of file
+        :rtype: str
+        """
+        for line in self._readline(self._proteinatlas):
+            yield line
+
+    def _readline(self, proteinatlas):
+        """
+        Generator that returns next line of **proteinatlas**
+
+        :param proteinatlas: Path to xml or xml.gz file or URL to download
+                             xml or xml.gz file
         :type proteinatlas: str
         :return: next line of file
         :rtype: str
@@ -47,9 +66,11 @@ class ProteinAtlasReader(object):
                     yield line
             return
         # use python requests to download the file and then get its results
-        local_file = os.path.join(self._outdir, proteinatlas.split('/')[-1])
+        local_file = os.path.join(self._outdir,
+                                  proteinatlas.split('/')[-1])
 
-        with requests.get(proteinatlas, stream=True) as r:
+        with requests.get(proteinatlas,
+                          stream=True) as r:
             content_size = int(r.headers.get('content-length', 0))
             tqdm_bar = tqdm(desc='Downloading ' + os.path.basename(local_file),
                             total=content_size,
@@ -67,7 +88,7 @@ class ProteinAtlasReader(object):
             finally:
                 tqdm_bar.close()
 
-        for line in self.readline(local_file):
+        for line in self._readline(local_file):
             yield line
 
 
@@ -137,7 +158,6 @@ class ImageDownloadTupleGenerator(object):
         self._samples_list = samples_list
         self._reader = reader
         self._sample_urlmap = {}
-        self._populate_sample_urlmap()
 
     def _populate_sample_urlmap(self):
         """
@@ -146,8 +166,10 @@ class ImageDownloadTupleGenerator(object):
 
         :return:
         """
-        for image_id, image_url in self._reader.readline():
+        for image_id, image_url in self._reader.get_next_image_id_and_url():
             self._sample_urlmap[image_id] = image_url
+
+        logger.debug(self._sample_urlmap)
 
     def _get_image_prefix_suffix(self, image_url):
         """
@@ -169,6 +191,8 @@ class ImageDownloadTupleGenerator(object):
         :return: list of tuples (image download URL, destination file path)
         :rtype: list
         """
+        self._populate_sample_urlmap()
+
         for sample in self._samples_list:
             image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' +\
                        sample['if_plate_id'] +\
@@ -177,6 +201,10 @@ class ImageDownloadTupleGenerator(object):
             if image_id not in self._sample_urlmap:
                 logger.error(image_id + ' not in sample map')
                 continue
+
+            image_filename = sample['if_plate_id'] +\
+                             '_' + sample['position'] +\
+                             '_' + sample['sample'] + '_'
             for c in constants.COLORS:
                 sample_url = self._sample_urlmap[image_id]
                 (image_url_prefix,
@@ -184,4 +212,4 @@ class ImageDownloadTupleGenerator(object):
 
                 yield (image_url_prefix + c + image_suffix,
                        os.path.join(color_download_map[c],
-                                    image_id + c + image_suffix))
+                                    image_filename + c + image_suffix))
