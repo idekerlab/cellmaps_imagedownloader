@@ -7,17 +7,14 @@ import os
 import unittest
 import tempfile
 import shutil
+import requests
 import requests_mock
 from unittest.mock import MagicMock
-from unittest.mock import Mock
 import json
 from cellmaps_utils import constants
 import cellmaps_imagedownloader
 from cellmaps_imagedownloader.exceptions import CellMapsImageDownloaderError
-from cellmaps_utils.exceptions import CellMapsProvenanceError
 from cellmaps_imagedownloader.runner import CellmapsImageDownloader
-from cellmaps_imagedownloader.runner import ImageDownloader
-from cellmaps_imagedownloader.gene import ImageGeneNodeAttributeGenerator
 from cellmaps_imagedownloader import runner
 
 
@@ -34,6 +31,155 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
         """Tests constructor"""
         myobj = CellmapsImageDownloader(outdir='foo')
         self.assertIsNotNone(myobj)
+
+    def test_constructor_no_outdir(self):
+        try:
+            CellmapsImageDownloader()
+            self.fail('Expected Exception')
+        except CellMapsImageDownloaderError as e:
+            self.assertEqual('outdir is None', str(e))
+
+    def test_register_software(self):
+        prov = MagicMock()
+        prov.register_software = MagicMock(return_value='12345')
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance_utils=prov)
+        myobj._register_software()
+        self.assertEqual('12345', myobj._softwareid)
+        self.assertEqual(1, prov.register_software.call_count)
+        self.assertEqual('/foo',
+                         prov.register_software.call_args_list[0][0][0])
+        self.assertEqual(cellmaps_imagedownloader.__name__,
+                         prov.register_software.call_args_list[0][1]['name'])
+        self.assertEqual(cellmaps_imagedownloader.__version__,
+                         prov.register_software.call_args_list[0][1]['version'])
+        self.assertEqual(cellmaps_imagedownloader.__author__,
+                         prov.register_software.call_args_list[0][1]['author'])
+        self.assertEqual(cellmaps_imagedownloader.__description__,
+                         prov.register_software.call_args_list[0][1]['description'])
+        self.assertEqual(cellmaps_imagedownloader.__repo_url__,
+                         prov.register_software.call_args_list[0][1]['url'])
+        self.assertEqual('py',
+                         prov.register_software.call_args_list[0][1]['file_format'])
+
+    def test_register_image_gene_node_attrs(self):
+        prov = MagicMock()
+        prov.register_dataset = MagicMock()
+        prov.register_dataset.side_effect =['1', '2']
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance_utils=prov)
+        myobj._register_image_gene_node_attrs()
+        myobj._register_image_gene_node_attrs(fold=2)
+        self.assertEqual(['1', '2'], myobj._image_gene_attrid)
+        self.assertEqual(2, prov.register_dataset.call_count)
+        self.assertEqual('/foo/1_image_gene_node_attributes.tsv',
+                         prov.register_dataset.call_args_list[0][1]['source_file'])
+        self.assertEqual('/foo/2_image_gene_node_attributes.tsv',
+                         prov.register_dataset.call_args_list[1][1]['source_file'])
+
+        # todo verify all fields in data_dict are correct
+
+    def test_add_dataset_to_crate(self):
+        prov = MagicMock()
+        prov.register_dataset = MagicMock(return_value='1')
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance_utils=prov)
+        self.assertEqual('1',
+                         myobj._add_dataset_to_crate(data_dict={},
+                                                     source_file='/srcfile'))
+
+    def test_register_computation_no_datasets(self):
+        prov = MagicMock()
+        prov.register_computation = MagicMock(return_value='1')
+        prov.get_login = MagicMock(return_value='smith')
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance_utils=prov)
+        myobj._softwareid = 'softwareid'
+        myobj._unique_datasetid = 'uniqueid'
+        myobj._samples_datasetid = 'samples'
+        myobj._register_computation()
+        self.assertEqual(1, prov.register_computation.call_count)
+        self.assertEqual('/foo',
+                         prov.register_computation.call_args_list[0][0][0])
+        self.assertEqual(cellmaps_imagedownloader.__name__ + ' computation',
+                         prov.register_computation.call_args_list[0][1]['name'])
+        self.assertEqual('smith',
+                         prov.register_computation.call_args_list[0][1]['run_by'])
+        self.assertEqual('None',
+                         prov.register_computation.call_args_list[0][1]['command'])
+        self.assertEqual('run of ' + cellmaps_imagedownloader.__name__,
+                         prov.register_computation.call_args_list[0][1]['description'])
+        self.assertEqual(['softwareid'],
+                         prov.register_computation.call_args_list[0][1]['used_software'])
+        self.assertEqual(['uniqueid', 'samples'],
+                         prov.register_computation.call_args_list[0][1]['used_dataset'])
+        self.assertEqual([],
+                         prov.register_computation.call_args_list[0][1]['generated'])
+
+    def test_register_computation_no_one_gene_attr_and_one_image(self):
+        prov = MagicMock()
+        prov.register_computation = MagicMock(return_value='1')
+        prov.get_login = MagicMock(return_value='smith')
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance_utils=prov)
+        myobj._image_gene_attrid = ['image1']
+        myobj._image_dataset_ids = ['1']
+        myobj._softwareid = 'softwareid'
+        myobj._unique_datasetid = 'uniqueid'
+        myobj._samples_datasetid = 'samples'
+        myobj._register_computation()
+        self.assertEqual(1, prov.register_computation.call_count)
+        self.assertEqual('/foo',
+                         prov.register_computation.call_args_list[0][0][0])
+        self.assertEqual(cellmaps_imagedownloader.__name__ + ' computation',
+                         prov.register_computation.call_args_list[0][1]['name'])
+        self.assertEqual('smith',
+                         prov.register_computation.call_args_list[0][1]['run_by'])
+        self.assertEqual('None',
+                         prov.register_computation.call_args_list[0][1]['command'])
+        self.assertEqual('run of ' + cellmaps_imagedownloader.__name__,
+                         prov.register_computation.call_args_list[0][1]['description'])
+        self.assertEqual(['softwareid'],
+                         prov.register_computation.call_args_list[0][1]['used_software'])
+        self.assertEqual(['uniqueid', 'samples'],
+                         prov.register_computation.call_args_list[0][1]['used_dataset'])
+        self.assertEqual(['image1', '1'],
+                         prov.register_computation.call_args_list[0][1]['generated'])
+
+    def test_register_computation_no_two_gene_attr_and_2001_images(self):
+        prov = MagicMock()
+        prov.register_computation = MagicMock(return_value='1')
+        prov.get_login = MagicMock(return_value='smith')
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance_utils=prov)
+        myobj._image_gene_attrid = ['image1', 'image2']
+        myobj._image_dataset_ids = []
+        for x in range(2010):
+            myobj._image_dataset_ids.append(str(x))
+        myobj._softwareid = 'softwareid'
+        myobj._unique_datasetid = 'uniqueid'
+        myobj._samples_datasetid = 'samples'
+        myobj._register_computation()
+        self.assertEqual(1, prov.register_computation.call_count)
+        self.assertEqual('/foo',
+                         prov.register_computation.call_args_list[0][0][0])
+        self.assertEqual(cellmaps_imagedownloader.__name__ + ' computation',
+                         prov.register_computation.call_args_list[0][1]['name'])
+        self.assertEqual('smith',
+                         prov.register_computation.call_args_list[0][1]['run_by'])
+        self.assertEqual('None',
+                         prov.register_computation.call_args_list[0][1]['command'])
+        self.assertEqual('run of ' + cellmaps_imagedownloader.__name__,
+                         prov.register_computation.call_args_list[0][1]['description'])
+        self.assertEqual(['softwareid'],
+                         prov.register_computation.call_args_list[0][1]['used_software'])
+        self.assertEqual(['uniqueid', 'samples'],
+                         prov.register_computation.call_args_list[0][1]['used_dataset'])
+        gen_list = prov.register_computation.call_args_list[0][1]['generated']
+        self.assertEqual('image1', gen_list[0])
+        self.assertEqual('image2', gen_list[1])
+        self.assertEqual('0', gen_list[2])
+        self.assertEqual('1999', gen_list[2001])
 
     def test_run(self):
         """ Tests run()"""
@@ -83,6 +229,86 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
             self.assertEqual((mockurl, a_dest_file), rtuple)
             self.assertFalse(os.path.isfile(a_dest_file))
 
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_download_raise_httperror(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            mockurl = 'http://fakey.fake.com/ha.txt'
+
+            with requests_mock.mock() as m:
+                m.get(mockurl, exc=requests.exceptions.HTTPError('httperror'))
+                a_dest_file = os.path.join(temp_dir, 'downloadedfile.txt')
+                rstatus, rtext, rtuple = runner.download_file((mockurl, a_dest_file))
+            self.assertEqual(-1, rstatus)
+            self.assertEqual('httperror', rtext)
+            self.assertEqual((mockurl, a_dest_file), rtuple)
+            self.assertFalse(os.path.isfile(a_dest_file))
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_download_raise_connectionerror(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            mockurl = 'http://fakey.fake.com/ha.txt'
+
+            with requests_mock.mock() as m:
+                m.get(mockurl, exc=requests.exceptions.ConnectionError('conerror'))
+                a_dest_file = os.path.join(temp_dir, 'downloadedfile.txt')
+                rstatus, rtext, rtuple = runner.download_file((mockurl, a_dest_file))
+            self.assertEqual(-2, rstatus)
+            self.assertEqual('conerror', rtext)
+            self.assertEqual((mockurl, a_dest_file), rtuple)
+            self.assertFalse(os.path.isfile(a_dest_file))
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_download_raise_timeouterror(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            mockurl = 'http://fakey.fake.com/ha.txt'
+
+            with requests_mock.mock() as m:
+                m.get(mockurl, exc=requests.exceptions.Timeout('timeerror'))
+                a_dest_file = os.path.join(temp_dir, 'downloadedfile.txt')
+                rstatus, rtext, rtuple = runner.download_file((mockurl, a_dest_file))
+            self.assertEqual(-3, rstatus)
+            self.assertEqual('timeerror', rtext)
+            self.assertEqual((mockurl, a_dest_file), rtuple)
+            self.assertFalse(os.path.isfile(a_dest_file))
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_download_raise_requestexceptionerror(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            mockurl = 'http://fakey.fake.com/ha.txt'
+
+            with requests_mock.mock() as m:
+                m.get(mockurl, exc=requests.exceptions.RequestException('error'))
+                a_dest_file = os.path.join(temp_dir, 'downloadedfile.txt')
+                rstatus, rtext, rtuple = runner.download_file((mockurl, a_dest_file))
+            self.assertEqual(-4, rstatus)
+            self.assertEqual('error', rtext)
+            self.assertEqual((mockurl, a_dest_file), rtuple)
+            self.assertFalse(os.path.isfile(a_dest_file))
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_download_raise_exceptionerror(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            mockurl = 'http://fakey.fake.com/ha.txt'
+
+            with requests_mock.mock() as m:
+                m.get(mockurl, exc=Exception('error'))
+                a_dest_file = os.path.join(temp_dir, 'downloadedfile.txt')
+                rstatus, rtext, rtuple = runner.download_file((mockurl, a_dest_file))
+            self.assertEqual(-5, rstatus)
+            self.assertEqual('error', rtext)
+            self.assertEqual((mockurl, a_dest_file), rtuple)
+            self.assertFalse(os.path.isfile(a_dest_file))
         finally:
             shutil.rmtree(temp_dir)
 

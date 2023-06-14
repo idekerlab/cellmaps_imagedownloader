@@ -353,7 +353,7 @@ class CellmapsImageDownloader(object):
                                                                     description=cellmaps_imagedownloader.__description__,
                                                                     author=cellmaps_imagedownloader.__author__,
                                                                     version=cellmaps_imagedownloader.__version__,
-                                                                    file_format='.py',
+                                                                    file_format='py',
                                                                     url=cellmaps_imagedownloader.__repo_url__)
 
     def _register_image_gene_node_attrs(self, fold=1):
@@ -361,15 +361,20 @@ class CellmapsImageDownloader(object):
         Registers image_gene_node_attributes.tsv file with create as a dataset
 
         """
-        data_dict = {'name': cellmaps_imagedownloader.__name__ + ' output file',
-                     'description': 'Image gene node attributes file',
+        if self._image_gene_attrid is None:
+            self._image_gene_attrid = []
+        data_dict = {'name': cellmaps_imagedownloader.__name__ +
+                             ' output file',
+                     'description': 'Fold ' + str(fold) +
+                                    ' Image gene node attributes file',
                      'data-format': 'tsv',
                      'author': cellmaps_imagedownloader.__name__,
                      'version': cellmaps_imagedownloader.__version__,
                      'date-published': date.today().strftime('%m-%d-%Y')}
-        self._image_gene_attrid = self._provenance_utils.register_dataset(self._outdir,
-                                                                          source_file=self.get_image_gene_node_attributes_file(fold),
-                                                                          data_dict=data_dict)
+        src_file = self.get_image_gene_node_attributes_file(fold)
+        self._image_gene_attrid.append(self._provenance_utils.register_dataset(self._outdir,
+                                                                          source_file=src_file,
+                                                                          data_dict=data_dict))
 
     def _add_dataset_to_crate(self, data_dict=None,
                               source_file=None, skip_copy=True):
@@ -389,7 +394,10 @@ class CellmapsImageDownloader(object):
 
         :return:
         """
-        generated = [self._image_gene_attrid]
+        if self._image_gene_attrid is not None:
+            generated = self._image_gene_attrid
+        else:
+            generated = []
         if self._image_dataset_ids is not None:
             if len(self._image_dataset_ids) > 2000:
                 logger.error('Too many images to register with FAIRSCAPE. registering 1st 2,000')
@@ -618,6 +626,21 @@ class CellmapsImageDownloader(object):
                 for e in errors:
                     f.write(str(e) + '\n')
 
+    def _add_imageurl_to_gene_node_attrs(self, gene_node_attrs=None):
+        """
+        Adds imageurl to **gene_node_attrs** passed in
+
+        :param gene_node_attrs:
+        :type gene_node_attrs: dict
+        """
+        sample_urlmap = self._imageurlgen.get_sample_urlmap()
+        for key in gene_node_attrs:
+            sample = gene_node_attrs[key]
+            image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' + \
+                       sample['filename']
+            if image_id in sample_urlmap:
+                gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = sample_urlmap[image_id]
+
     def run(self):
         """
         Downloads images to output directory specified in constructor
@@ -639,20 +662,18 @@ class CellmapsImageDownloader(object):
 
             self._register_software()
 
+            exitcode, failed_downloads = self._download_images()
+            # todo need to validate downloaded image data
+
+
             # write image attribute data
             for fold in [1, 2]:
                 image_gene_node_attrs, errors = self._imagegen.get_gene_node_attributes(fold)
-
+                self._add_imageurl_to_gene_node_attrs(gene_node_attrs=image_gene_node_attrs)
                 # write image attribute data
                 self._write_image_gene_node_attrs(image_gene_node_attrs, fold, errors)
 
                 self._register_image_gene_node_attrs(fold)
-
-            exitcode, failed_downloads = self._download_images()
-            # to get the failed images with 404 http error this grep will work:
-            # grep " 404 " output.log  | sed "s/^.*(\'//" | egrep "^http" | sed "s/\'.*//" | sort | uniq
-
-            # todo need to validate downloaded image data
 
             # Todo: Right now only registering 2,000 images. need to fix
             self._register_downloaded_images()

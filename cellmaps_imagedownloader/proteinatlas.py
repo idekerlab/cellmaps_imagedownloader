@@ -157,7 +157,7 @@ class ImageDownloadTupleGenerator(object):
         """
         self._samples_list = samples_list
         self._reader = reader
-        self._sample_urlmap = {}
+        self._sample_urlmap = None
 
     def _populate_sample_urlmap(self):
         """
@@ -166,10 +166,25 @@ class ImageDownloadTupleGenerator(object):
 
         :return:
         """
+        self._sample_urlmap = {}
         for image_id, image_url in self._reader.get_next_image_id_and_url():
             self._sample_urlmap[image_id] = image_url
 
         logger.debug(self._sample_urlmap)
+
+    def get_sample_urlmap(self):
+        """
+        Gets map of ANTIBODY/PLATE_ID_POSITION_SAMPLE_ => download url of _blue_red_green.jpg
+
+
+        .. note::
+
+            This only returns a map if get_next_image_url() has already been called
+
+        :return: map or ``None``
+        :rtype: dict
+        """
+        return self._sample_urlmap
 
     def _get_image_prefix_suffix(self, image_url):
         """
