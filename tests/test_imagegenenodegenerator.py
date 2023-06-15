@@ -372,6 +372,62 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
         # check we got no error
         self.assertEqual(0, len(res[1]))
 
+    def test_write_samples_to_csvfile_with_no_file(self):
+        mockgenequery = MagicMock()
+        imagegen = ImageGeneNodeAttributeGenerator(genequery=mockgenequery)
+        try:
+            imagegen.write_samples_to_csvfile(None)
+            self.fail('expected exception')
+        except CellMapsImageDownloaderError as e:
+            self.assertEqual('csvfile is None', str(e))
+
+    def test_write_samples_to_csvfile(self):
+        mockgenequery = MagicMock()
+        temp_dir = tempfile.mkdtemp()
+        try:
+            csvfile = os.path.join(temp_dir, 'foo.csv')
+            samples = [{'filename': '/archive/1/1_A1_1_',
+                        'if_plate_id': '1', 'position': 'A1',
+                        'sample': '1', 'status': '35',
+                        'locations': 'Golgi apparatus',
+                        'antibody': 'HPA000992',
+                        'ensembl_ids': 'ENSG00000066455',
+                        'gene_names': 'GOLGA5'}]
+            imagegen = ImageGeneNodeAttributeGenerator(genequery=mockgenequery,
+                                                       samples_list=samples)
+            imagegen.write_samples_to_csvfile(csvfile)
+
+            res = ImageGeneNodeAttributeGenerator.get_samples_from_csvfile(csvfile)
+            self.assertEqual(samples[0], res[0])
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_write_unique_list_to_csvfile_with_no_file(self):
+        mockgenequery = MagicMock()
+        imagegen = ImageGeneNodeAttributeGenerator(genequery=mockgenequery)
+        try:
+            imagegen.write_unique_list_to_csvfile(None)
+            self.fail('expected exception')
+        except CellMapsImageDownloaderError as e:
+            self.assertEqual('csvfile is None', str(e))
+
+    def test_write_unique_list_to_csvfile(self):
+        mockgenequery = MagicMock()
+        temp_dir = tempfile.mkdtemp()
+        try:
+            csvfile = os.path.join(temp_dir, 'foo.csv')
+            unique = [{'antibody': 'ABC',
+                                'ensembl_ids': 'ENSG00000171921',
+                                'gene_names': 'CDK5', 'atlas_name': 'Brain',
+                                'locations': 'CA1', 'n_location': '1'}]
+            imagegen = ImageGeneNodeAttributeGenerator(genequery=mockgenequery,
+                                                       unique_list=unique)
+            imagegen.write_unique_list_to_csvfile(csvfile)
+
+            res = ImageGeneNodeAttributeGenerator.get_unique_list_from_csvfile(csvfile)
+            self.assertEqual(unique[0], res[0])
+        finally:
+            shutil.rmtree(temp_dir)
 
 
 

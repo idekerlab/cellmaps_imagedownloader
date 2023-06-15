@@ -265,7 +265,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         with open(csvfile, 'w', newline='') as f:
             writer = csv.DictWriter(f,
                                     fieldnames=ImageGeneNodeAttributeGenerator.UNIQUE_HEADER_COLS,
-                                    delimiter='\t')
+                                    delimiter=',')
             writer.writeheader()
             for unique_entry in self._unique_list:
                 writer.writerow(unique_entry)
@@ -282,7 +282,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         with open(csvfile, 'w', newline='') as f:
             writer = csv.DictWriter(f,
                                     fieldnames=ImageGeneNodeAttributeGenerator.SAMPLES_HEADER_COLS,
-                                    delimiter='\t')
+                                    delimiter=',')
             writer.writeheader()
             for sample in self._samples_list:
                 writer.writerow(sample)
@@ -357,7 +357,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         g_antibody_dict = {}
         antibody_filename_dict = {}
         ambiguous_antibody_dict = {}
-        
+
         for sample in self._samples_list:
             antibody = sample['antibody']
             if allowed_antibodies is not None and antibody not in allowed_antibodies:
@@ -367,7 +367,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
             ensembl_ids = sample['ensembl_ids'].split(',')
             if len(ensembl_ids) > 1:
                 ambiguous_antibody_dict[antibody] = sample['ensembl_ids']
-            
+
             if antibody not in antibody_filename_dict:
                 antibody_filename_dict[antibody] = set()
             antibody_filename_dict[antibody].add(sample['if_plate_id'] + '_' +
@@ -379,7 +379,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                     if g in ambiguous_antibody_dict:
                         continue
                 g_antibody_dict[g] = sample['antibody']
-              
+
         return g_antibody_dict, antibody_filename_dict, ambiguous_antibody_dict
 
     def get_gene_node_attributes(self, fold=1):
@@ -488,15 +488,15 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
             else:
                 ensemblstr += x['ensembl']['gene']
                 ensembl_id = x['ensembl']['gene']
-                
+
             antibody_str = g_antibody_dict[ensembl_id]
 
             filenames = list(antibody_filename_dict[antibody_str])
             if len(filenames) < fold:
                 filename_str = filenames[0]
-            else: 
+            else:
                 filename_str = filenames[fold - 1]
-                
+
             ambiguous_str = ''
             if antibody_str in ambiguous_antibody_dict:
                 ambiguous_str = ambiguous_antibody_dict[antibody_str]
