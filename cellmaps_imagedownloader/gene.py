@@ -253,6 +253,40 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                 u_list.append(unique_entry)
         return u_list
 
+    def write_unique_list_to_csvfile(self, csvfile=None):
+        """
+        Writes unique list to file
+
+        :param csvfile: path to file to write
+        :type csvfile: str
+        """
+        if csvfile is None:
+            raise CellMapsImageDownloaderError('csvfile is None')
+        with open(csvfile, 'w', newline='') as f:
+            writer = csv.DictWriter(f,
+                                    fieldnames=ImageGeneNodeAttributeGenerator.UNIQUE_HEADER_COLS,
+                                    delimiter='\t')
+            writer.writeheader()
+            for unique_entry in self._unique_list:
+                writer.writerow(unique_entry)
+
+    def write_samples_to_csvfile(self, csvfile=None):
+        """
+        Writes samples to file
+
+        :param csvfile: path to file to write
+        :type csvfile: str
+        """
+        if csvfile is None:
+            raise CellMapsImageDownloaderError('csvfile is None')
+        with open(csvfile, 'w', newline='') as f:
+            writer = csv.DictWriter(f,
+                                    fieldnames=ImageGeneNodeAttributeGenerator.SAMPLES_HEADER_COLS,
+                                    delimiter='\t')
+            writer.writeheader()
+            for sample in self._samples_list:
+                writer.writerow(sample)
+
     def _get_unique_ids_from_samplelist(self, column='ensembl_ids'):
         """
         Gets a unique list of ids split by comma from the samples

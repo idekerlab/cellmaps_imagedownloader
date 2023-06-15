@@ -358,8 +358,11 @@ class CellmapsImageDownloader(object):
 
     def _register_image_gene_node_attrs(self, fold=1):
         """
-        Registers image_gene_node_attributes.tsv file with create as a dataset
+        Registers <fold>_image_gene_node_attributes.tsv file with
+        ro-crate as a dataset
 
+        :param fold: name of fold
+        :type fold: int
         """
         if self._image_gene_attrid is None:
             self._image_gene_attrid = []
@@ -379,9 +382,12 @@ class CellmapsImageDownloader(object):
     def _add_dataset_to_crate(self, data_dict=None,
                               source_file=None, skip_copy=True):
         """
+        Adds a dataset to rocrate
 
-        :param crate_path:
-        :param data_dict:
+        :param crate_path: Path to rocrate
+        :type crate_path: str
+        :param data_dict: information needed to add dataset
+        :type data_dict: dict
         :return:
         """
         return self._provenance_utils.register_dataset(self._outdir,
@@ -391,8 +397,9 @@ class CellmapsImageDownloader(object):
 
     def _register_computation(self):
         """
+        Registers computation with rocrate.
+        Current implementation only registers the 1st 2000 images
 
-        :return:
         """
         if self._image_gene_attrid is not None:
             generated = self._image_gene_attrid
@@ -431,37 +438,57 @@ class CellmapsImageDownloader(object):
         except KeyError as ke:
             raise CellMapsImageDownloaderError('Key missing in provenance: ' + str(ke))
 
-    def _register_input_datasets(self):
+    def _register_samples_dataset(self):
         """
-        Registers samples and unique input datasets with FAIRSCAPE
-        setting **self._samples_datasetid** and **self._unique_datasetid**
-        values.
 
         :return:
         """
-
         if 'guid' in self._provenance[CellmapsImageDownloader.SAMPLES_FILEKEY]:
             self._samples_datasetid = self._provenance[CellmapsImageDownloader.SAMPLES_FILEKEY]['guid']
-        if 'guid' in self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY]:
-            self._unique_datasetid = self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY]['guid']
-
-        if self._samples_datasetid is not None and self._unique_datasetid is not None:
-            logger.debug('Both samples and unique have dataset ids. Just returning')
             return
 
-        if self._samples_datasetid is None:
-            # write file and add samples dataset
-            self._samples_datasetid = self._add_dataset_to_crate(data_dict=self._provenance[CellmapsImageDownloader.SAMPLES_FILEKEY],
-                                                                 source_file=self._input_data_dict[CellmapsImageDownloader.SAMPLES_FILEKEY],
-                                                                 skip_copy=False)
-            logger.debug('Samples dataset id: ' + str(self._samples_datasetid))
+        # if input file for samples was not set then write the samples we
+        # have to the output directory and use that path as dataset to register
+        if self._input_data_dict is None or CellmapsImageDownloader.SAMPLES_FILEKEY not in self._input_data_dict:
+            samples_file = os.path.join(self._outdir, 'samplescopy.csv')
+            self._imagegen.write_samples_to_csvfile(csvfile=samples_file)
+            skip_samples_copy = True
+        else:
+            samples_file = self._input_data_dict[CellmapsImageDownloader.SAMPLES_FILEKEY]
+            skip_samples_copy = False
 
-        if self._unique_datasetid is None:
-            # write file and add unique dataset
-            self._unique_datasetid = self._add_dataset_to_crate(data_dict=self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY],
-                                                                source_file=self._input_data_dict[CellmapsImageDownloader.UNIQUE_FILEKEY],
-                                                                skip_copy=False)
-            logger.debug('Unique dataset id: ' + str(self._unique_datasetid))
+        # add samples dataset
+        self._samples_datasetid = self._add_dataset_to_crate(
+            data_dict=self._provenance[CellmapsImageDownloader.SAMPLES_FILEKEY],
+            source_file=samples_file,
+            skip_copy=skip_samples_copy)
+        logger.debug('Samples dataset id: ' + str(self._samples_datasetid))
+
+    def _register_unique_dataset(self):
+        """
+
+        :return:
+        """
+        if 'guid' in self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY]:
+            self._unique_datasetid = self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY]['guid']
+            return
+
+        # if input file for unique list was not set then write the unique list we
+        # have to the output directory and use that path as dataset to register
+        if self._input_data_dict is None or CellmapsImageDownloader.UNIQUE_FILEKEY not in self._input_data_dict:
+            unique_file = os.path.join(self._outdir, 'uniquecopy.csv')
+            self._imagegen.write_unique_list_to_csvfile(csvfile=unique_file)
+            skip_unique_copy = True
+        else:
+            unique_file = self._input_data_dict[CellmapsImageDownloader.UNIQUE_FILEKEY]
+            skip_unique_copy = False
+
+        # add unique dataset
+        self._unique_datasetid = self._add_dataset_to_crate(
+            data_dict=self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY],
+            source_file=unique_file,
+            skip_copy=skip_unique_copy)
+        logger.debug('Unique dataset id: ' + str(self._unique_datasetid))
 
     def _register_downloaded_images(self):
         """
@@ -640,6 +667,10 @@ class CellmapsImageDownloader(object):
                        sample['filename']
             if image_id in sample_urlmap:
                 gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = sample_urlmap[image_id]
+            else:
+                # this should NOT happen, but just in case
+                logger.error(image_id + ' not in sample urlmap. setting to no image url found')
+                gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = 'no image url found'
 
     def run(self):
         """
@@ -658,13 +689,13 @@ class CellmapsImageDownloader(object):
                 self._write_task_start_json()
 
             self._create_run_crate()
-            self._register_input_datasets()
+            self._register_samples_dataset()
+            self._register_unique_dataset()
 
             self._register_software()
 
             exitcode, failed_downloads = self._download_images()
             # todo need to validate downloaded image data
-
 
             # write image attribute data
             for fold in [1, 2]:

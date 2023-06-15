@@ -181,6 +181,147 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
         self.assertEqual('0', gen_list[2])
         self.assertEqual('1999', gen_list[2001])
 
+    def test_create_run_crate_missing_value_in_provenance(self):
+        prov = MagicMock()
+        prov.register_rocrate = MagicMock()
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance_utils=prov,
+                                        provenance={})
+        try:
+            myobj._create_run_crate()
+            self.fail('expected exception')
+        except CellMapsImageDownloaderError as e:
+            self.assertEqual('Key missing in provenance: \'name\'', str(e))
+
+    def test_create_run_crate_invalidprovenancetype(self):
+        prov = MagicMock()
+        prov.register_rocrate = MagicMock()
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance_utils=prov,
+                                        provenance='')
+        try:
+            myobj._create_run_crate()
+            self.fail('expected exception')
+        except CellMapsImageDownloaderError as e:
+            self.assertTrue('Invalid provenance: ' in str(e))
+
+    def test_create_run_crate(self):
+        prov = MagicMock()
+        prov.register_rocrate = MagicMock()
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance_utils=prov,
+                                        provenance={'name': 'foo',
+                                                    'organization-name': 'icorp',
+                                                    'project-name': 'myproj'})
+        myobj._create_run_crate()
+        self.assertEqual(1, prov.register_rocrate.call_count)
+        self.assertEqual('/foo',
+                         prov.register_rocrate.call_args_list[0][0][0])
+        self.assertEqual('foo',
+                         prov.register_rocrate.call_args_list[0][1]['name'])
+        self.assertEqual('icorp',
+                         prov.register_rocrate.call_args_list[0][1]['organization_name'])
+        self.assertEqual('myproj',
+                         prov.register_rocrate.call_args_list[0][1]['project_name'])
+
+    def test_register_samples_dataset_guid_already_set(self):
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance={CellmapsImageDownloader.SAMPLES_FILEKEY: {'guid': '1'}})
+        myobj._register_samples_dataset()
+        self.assertEqual('1', myobj._samples_datasetid)
+
+    def test_register_unique_dataset_guid_already_set(self):
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance={CellmapsImageDownloader.UNIQUE_FILEKEY: {'guid': '2'}})
+        myobj._register_unique_dataset()
+        self.assertEqual('2', myobj._unique_datasetid)
+
+    def test_register_samples_dataset_no_input_data_dict(self):
+        prov_dict = {CellmapsImageDownloader.SAMPLES_FILEKEY: {'name': 'x'}}
+
+        imagegen = MagicMock()
+        imagegen.write_samples_to_csvfile = MagicMock()
+
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        imagegen=imagegen,
+                                        provenance=prov_dict)
+        myobj._add_dataset_to_crate = MagicMock()
+        myobj._add_dataset_to_crate.side_effect = ['id1']
+        myobj._register_samples_dataset()
+        self.assertEqual('id1', myobj._samples_datasetid)
+        self.assertEqual(1, imagegen.write_samples_to_csvfile.call_count)
+        self.assertEqual('/foo/samplescopy.csv',
+                         imagegen.write_samples_to_csvfile.call_args_list[0][1]['csvfile'])
+        self.assertEqual(1, myobj._add_dataset_to_crate.call_count)
+        self.assertEqual({'name': 'x'},
+                         myobj._add_dataset_to_crate.call_args_list[0][1]['data_dict'])
+        self.assertEqual('/foo/samplescopy.csv',
+                         myobj._add_dataset_to_crate.call_args_list[0][1]['source_file'])
+        self.assertEqual(True,
+                         myobj._add_dataset_to_crate.call_args_list[0][1]['skip_copy'])
+
+    def test_register_unique_dataset_no_input_data_dict(self):
+        prov_dict = {CellmapsImageDownloader.UNIQUE_FILEKEY: {'name': 'x'}}
+
+        imagegen = MagicMock()
+        imagegen.write_unique_list_to_csvfile = MagicMock()
+
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        imagegen=imagegen,
+                                        provenance=prov_dict)
+        myobj._add_dataset_to_crate = MagicMock()
+        myobj._add_dataset_to_crate.side_effect = ['id1']
+        myobj._register_unique_dataset()
+        self.assertEqual('id1', myobj._unique_datasetid)
+        self.assertEqual(1, imagegen.write_unique_list_to_csvfile.call_count)
+        self.assertEqual('/foo/uniquecopy.csv',
+                         imagegen.write_unique_list_to_csvfile.call_args_list[0][1]['csvfile'])
+        self.assertEqual(1, myobj._add_dataset_to_crate.call_count)
+        self.assertEqual({'name': 'x'},
+                         myobj._add_dataset_to_crate.call_args_list[0][1]['data_dict'])
+        self.assertEqual('/foo/uniquecopy.csv',
+                         myobj._add_dataset_to_crate.call_args_list[0][1]['source_file'])
+        self.assertEqual(True,
+                         myobj._add_dataset_to_crate.call_args_list[0][1]['skip_copy'])
+
+    def test_register_samples_dataset(self):
+        prov_dict = {CellmapsImageDownloader.SAMPLES_FILEKEY: {'name': 'x'}}
+
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance=prov_dict,
+                                        input_data_dict={CellmapsImageDownloader.SAMPLES_FILEKEY: '/x/samples.csv'})
+        myobj._add_dataset_to_crate = MagicMock()
+        myobj._add_dataset_to_crate.side_effect = ['id1']
+        myobj._register_samples_dataset()
+        self.assertEqual('id1', myobj._samples_datasetid)
+
+        self.assertEqual(1, myobj._add_dataset_to_crate.call_count)
+        self.assertEqual({'name': 'x'},
+                         myobj._add_dataset_to_crate.call_args_list[0][1]['data_dict'])
+        self.assertEqual('/x/samples.csv',
+                         myobj._add_dataset_to_crate.call_args_list[0][1]['source_file'])
+        self.assertEqual(False,
+                         myobj._add_dataset_to_crate.call_args_list[0][1]['skip_copy'])
+
+    def test_register_unique_dataset(self):
+        prov_dict = {CellmapsImageDownloader.UNIQUE_FILEKEY: {'name': 'x'}}
+
+        myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance=prov_dict,
+                                        input_data_dict={CellmapsImageDownloader.UNIQUE_FILEKEY: '/x/unique.csv'})
+        myobj._add_dataset_to_crate = MagicMock()
+        myobj._add_dataset_to_crate.side_effect = ['id1']
+        myobj._register_unique_dataset()
+        self.assertEqual('id1', myobj._unique_datasetid)
+
+        self.assertEqual(1, myobj._add_dataset_to_crate.call_count)
+        self.assertEqual({'name': 'x'},
+                         myobj._add_dataset_to_crate.call_args_list[0][1]['data_dict'])
+        self.assertEqual('/x/unique.csv',
+                         myobj._add_dataset_to_crate.call_args_list[0][1]['source_file'])
+        self.assertEqual(False,
+                         myobj._add_dataset_to_crate.call_args_list[0][1]['skip_copy'])
+
     def test_run(self):
         """ Tests run()"""
         temp_dir = tempfile.mkdtemp()
