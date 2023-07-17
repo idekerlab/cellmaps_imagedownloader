@@ -1,6 +1,6 @@
-=========================
-cellmaps_imagedownloader
-=========================
+=============================================
+Cell Maps ImmunoFluorescent Image Downloader
+=============================================
 
 
 .. image:: https://img.shields.io/pypi/v/cellmaps_imagedownloader.svg
@@ -9,12 +9,13 @@ cellmaps_imagedownloader
 .. image:: https://app.travis-ci.com/idekerlab/cellmaps_imagedownloader.svg?branch=main
     :target: https://app.travis-ci.com/idekerlab/cellmaps_imagedownloader
 
-.. image:: https://readthedocs.org/projects/cellmaps-downloader/badge/?version=latest
+.. image:: https://readthedocs.org/projects/cellmaps-imagedownloader/badge/?version=latest
         :target: https://cellmaps-imagedownloader.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
 
-Downloads IF data needed for CM4AI MuSIC pipeline
+Downloads ImmunoFluorescent image data from `Human Protein Atlas <https://www.proteinatlas.org/>`__
+used by `Cell Maps for AI (CM4AI) <https://cm4ai.org>`__
 
 
 * Free software: MIT license
