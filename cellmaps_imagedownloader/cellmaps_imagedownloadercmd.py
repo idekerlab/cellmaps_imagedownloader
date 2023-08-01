@@ -58,7 +58,7 @@ def _parse_arguments(desc, args):
     parser.add_argument('--image_url', default='https://images.proteinatlas.org',
                         help='Base URL for downloading IF images')
     parser.add_argument('--proteinatlasxml',
-                        default='https://www.proteinatlas.org/download/proteinatlas.xml.gz',
+                        default=ProteinAtlasReader.DEFAULT_PROTEINATLAS_URL,
                         help='URL or path to proteinatlas.xml or proteinatlas.xml.gz file '
                              'used to look for images not found in the standard location '
                              'on HPA')

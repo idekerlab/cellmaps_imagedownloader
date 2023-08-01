@@ -18,6 +18,9 @@ class ProteinAtlasReader(object):
     Returns contents of proteinatlas.xml file one
     line at a time
     """
+
+    DEFAULT_PROTEINATLAS_URL = 'https://www.proteinatlas.org/download/proteinatlas.xml.gz'
+
     def __init__(self, outdir=None,
                  proteinatlas=None):
         """
@@ -29,6 +32,8 @@ class ProteinAtlasReader(object):
         :type proteinatlas: str
         """
         self._outdir = outdir
+        if proteinatlas is None:
+            self._proteinatlas = ProteinAtlasReader.DEFAULT_PROTEINATLAS_URL
         self._proteinatlas = proteinatlas
 
     def readline(self):
@@ -127,7 +132,7 @@ class ProteinAtlasImageUrlReader(object):
         :return:
         """
         antibody_and_id = '/'.join(image_url.split('/')[-2:])
-        return antibody_and_id[:antibody_and_id.index('_blue')+1]
+        return '_'.join(antibody_and_id.split('_')[0:3]) + '_'
 
     def get_next_image_id_and_url(self):
         """

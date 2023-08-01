@@ -51,7 +51,7 @@ class TestProteinAtlasImageUrlReader(unittest.TestCase):
         self.assertEqual(('4109/1832_C1_2_',
                           'http://images.proteinatlas.org/4109/1832_C1_2_blue_'
                           'red_green.jpg'), res[0])
-        self.assertEqual(('4109/1843_B2_17_cr5af971a263864_',
+        self.assertEqual(('4109/1843_B2_17_',
                           'http://images.proteinatlas.org/4109/1843_B2_17_'
                           'cr5af971a263864_blue_red_green.jpg'), res[1])
 
