@@ -99,7 +99,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
     """
 
     SAMPLES_HEADER_COLS = ['filename', 'if_plate_id',
-                           'position', 'sample', 'status',
+                           'position', 'sample', #'status',
                            'locations', 'antibody',
                            'ensembl_ids', 'gene_names']
     """
@@ -489,6 +489,8 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                 ensemblstr += x['ensembl']['gene']
                 ensembl_id = x['ensembl']['gene']
 
+            if ensembl_id not in g_antibody_dict:
+                continue
             antibody_str = g_antibody_dict[ensembl_id]
 
             filenames = list(antibody_filename_dict[antibody_str])
