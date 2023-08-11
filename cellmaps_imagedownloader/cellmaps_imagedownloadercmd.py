@@ -17,6 +17,7 @@ from cellmaps_imagedownloader.gene import ImageGeneNodeAttributeGenerator
 from cellmaps_imagedownloader.proteinatlas import ProteinAtlasReader
 from cellmaps_imagedownloader.proteinatlas import ProteinAtlasImageUrlReader
 from cellmaps_imagedownloader.proteinatlas import ImageDownloadTupleGenerator
+from cellmaps_imagedownloader.proteinatlas import LinkPrefixImageDownloadTupleGenerator
 
 
 logger = logging.getLogger(__name__)
@@ -211,9 +212,13 @@ Additional optional fields for registering datasets include
             dloader = MultiProcessImageDownloader(poolsize=theargs.poolsize,
                                                   skip_existing=theargs.skip_existing)
 
-        proteinatlas_reader = ProteinAtlasReader(theargs.outdir, proteinatlas=theargs.proteinatlasxml)
-        proteinatlas_urlreader = ProteinAtlasImageUrlReader(reader=proteinatlas_reader)
-        imageurlgen = ImageDownloadTupleGenerator(reader=proteinatlas_urlreader,
+        print(imagegen.get_samples_list()[0])
+        if 'linkprefix' in imagegen.get_samples_list()[0]:
+            imageurlgen = LinkPrefixImageDownloadTupleGenerator(samples_list=imagegen.get_samples_list())
+        else:
+            proteinatlas_reader = ProteinAtlasReader(theargs.outdir, proteinatlas=theargs.proteinatlasxml)
+            proteinatlas_urlreader = ProteinAtlasImageUrlReader(reader=proteinatlas_reader)
+            imageurlgen = ImageDownloadTupleGenerator(reader=proteinatlas_urlreader,
                                                   samples_list=imagegen.get_samples_list())
         return CellmapsImageDownloader(outdir=theargs.outdir,
                                        imagedownloader=dloader,

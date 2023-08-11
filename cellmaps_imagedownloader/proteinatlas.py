@@ -233,3 +233,89 @@ class ImageDownloadTupleGenerator(object):
                 yield (image_url_prefix + c + image_suffix,
                        os.path.join(color_download_map[c],
                                     image_filename + c + image_suffix))
+
+
+class LinkPrefixImageDownloadTupleGenerator(object):
+    """
+    Gets URL to download images for given samples
+    """
+    def __init__(self, samples_list=None):
+        """
+
+        :param samples_list:
+        """
+        self._samples_list = samples_list
+        self._sample_urlmap = None
+
+    def _populate_sample_urlmap(self):
+        """
+        Iterates over reader and builds a
+        map of ANTIBODY/PLATE_ID_POSITION_SAMPLE_ => download url of _blue_red_green.jpg
+
+        :return:
+        """
+        self._sample_urlmap = {}
+        for sample in self._samples_list:
+            image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' + \
+                       sample['filename']
+
+            self._sample_urlmap[image_id] = sample['linkprefix'] + 'blue_red_green.jpg'
+
+        logger.debug(self._sample_urlmap)
+
+    def get_sample_urlmap(self):
+        """
+        Gets map of ANTIBODY/PLATE_ID_POSITION_SAMPLE_ => download url of _blue_red_green.jpg
+
+
+        .. note::
+
+            This only returns a map if get_next_image_url() has already been called
+
+        :return: map or ``None``
+        :rtype: dict
+        """
+        return self._sample_urlmap
+
+    def _get_image_prefix_suffix(self, image_url):
+        """
+        Extracts URL prefix and filename suffix from **image_url**
+        :param image_url:
+        :type image_url: str
+        :return: (image url prefix, suffix ie .jpg)
+        :rtype: tuple
+        """
+        prefix = image_url[:image_url.index('_blue')+1]
+        suffix = image_url[image_url.rindex('.'):]
+        return prefix, suffix
+
+    def get_next_image_url(self, color_download_map=None):
+        """
+
+        :param color_download_map: dict of colors to location on filesystem
+                                   ``{'red': '/tmp/foo/red'}``
+        :return: list of tuples (image download URL, destination file path)
+        :rtype: list
+        """
+        self._populate_sample_urlmap()
+
+        for sample in self._samples_list:
+            image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' +\
+                       sample['if_plate_id'] +\
+                       '_' + sample['position'] +\
+                       '_' + sample['sample'] + '_'
+            if image_id not in self._sample_urlmap:
+                logger.error(image_id + ' not in sample map')
+                continue
+
+            image_filename = sample['if_plate_id'] +\
+                             '_' + sample['position'] +\
+                             '_' + sample['sample'] + '_'
+            for c in constants.COLORS:
+                sample_url = self._sample_urlmap[image_id]
+                (image_url_prefix,
+                 image_suffix) = self._get_image_prefix_suffix(sample_url)
+
+                yield (image_url_prefix + c + image_suffix,
+                       os.path.join(color_download_map[c],
+                                    image_filename + c + image_suffix))
