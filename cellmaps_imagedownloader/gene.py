@@ -102,6 +102,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                            'position', 'sample', #'status',
                            'locations', 'antibody',
                            'ensembl_ids', 'gene_names']
+    LINKPREFIX_HEADER = 'linkprefix'
     """
     Column labels for samples file
     """
@@ -222,6 +223,8 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                 sample_entry = {}
                 for key in ImageGeneNodeAttributeGenerator.SAMPLES_HEADER_COLS:
                     sample_entry[key] = row[key]
+                if ImageGeneNodeAttributeGenerator.LINKPREFIX_HEADER in row:
+                    sample_entry[ImageGeneNodeAttributeGenerator.LINKPREFIX_HEADER] = row[ImageGeneNodeAttributeGenerator.LINKPREFIX_HEADER]
                 samples.append(sample_entry)
         return samples
 
