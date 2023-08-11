@@ -311,8 +311,11 @@ class CellmapsImageDownloader(object):
         :return:
         """
         base_dict = {'name': 'Name for pipeline run',
-                     'organization-name': 'Name of organization',
-                     'project-name': 'Name of project'}
+                     'organization-name': 'Name of lab or group. Ex: Ideker',
+                     'project-name': 'Name of funding source or project',
+                     'cell-line': 'Name of cell line. Ex: U2OS',
+                     'treatment': 'Name of treatment, Ex: untreated',
+                     'release': 'Name of release. Example: 0.1 alpha'}
         if with_ids is not None and with_ids is True:
             guid_dict = ProvenanceUtil.example_dataset_provenance(with_ids=with_ids)
             base_dict.update({CellmapsImageDownloader.SAMPLES_FILEKEY: guid_dict,
@@ -324,6 +327,41 @@ class CellmapsImageDownloader(object):
         base_dict.update({CellmapsImageDownloader.SAMPLES_FILEKEY: field_dict,
                           CellmapsImageDownloader.UNIQUE_FILEKEY: field_dict})
         return base_dict
+
+    def _update_provenance_with_keywords(self):
+        """
+        Generates appropriate keywords from provenance data set in constructor
+
+        :return: keywords as str values
+        :rtype: list
+        """
+        if self._provenance is None:
+            logger.warning('Provenance is None')
+            return
+        keywords = []
+        for key in ['organization-name', 'project-name', 'release',
+                    'cell-line', 'treatment', 'name']:
+            if key in self._provenance:
+                keywords.append(self._provenance[key])
+        keywords.extend(['IF', 'microscopy', 'images'])
+        self._provenance['keywords'] = keywords
+
+    def _update_provenance_with_description(self):
+        """
+        Gets description from provenance
+        :return:
+        """
+        if self._provenance is None:
+            logger.warning('Provenance is None')
+            return
+        desc = ''
+        for key in ['project-name', 'name', 'release',
+                    'cell-line', 'treatment']:
+            if key in self._provenance:
+                if desc != '':
+                    desc += ' '
+                desc += self._provenance[key]
+        self._provenance['description'] = desc + ' IF microscopy images'
 
     def _create_output_directory(self):
         """
@@ -344,16 +382,23 @@ class CellmapsImageDownloader(object):
 
     def _register_software(self):
         """
-        Registers this tool
+        Registers this tool, self._provenance must exist and have 'keywords' and
+        'description' set
 
         :raises CellMapsProvenanceError: If fairscape call fails
         """
+        software_keywords = self._provenance['keywords']
+        software_keywords.extend(['tools', cellmaps_imagedownloader.__name__])
+        software_description = self._provenance['description'] +\
+                               ' ' +\
+                               cellmaps_imagedownloader.__description__
         self._softwareid = self._provenance_utils.register_software(self._outdir,
                                                                     name=cellmaps_imagedownloader.__name__,
-                                                                    description=cellmaps_imagedownloader.__description__,
+                                                                    description=software_description,
                                                                     author=cellmaps_imagedownloader.__author__,
                                                                     version=cellmaps_imagedownloader.__version__,
                                                                     file_format='py',
+                                                                    keywords=software_keywords,
                                                                     url=cellmaps_imagedownloader.__repo_url__)
 
     def _register_image_gene_node_attrs(self, fold=1):
@@ -366,18 +411,23 @@ class CellmapsImageDownloader(object):
         """
         if self._image_gene_attrid is None:
             self._image_gene_attrid = []
+
+        keywords = self._provenance['keywords']
+        keywords.extend(['gene', 'attributes', 'file'])
+        description = self._provenance['description'] + ' Fold ' + str(fold) + ' Image gene node attributes file'
+
         data_dict = {'name': cellmaps_imagedownloader.__name__ +
                              ' output file',
-                     'description': 'Fold ' + str(fold) +
-                                    ' Image gene node attributes file',
+                     'description': description,
                      'data-format': 'tsv',
                      'author': cellmaps_imagedownloader.__name__,
                      'version': cellmaps_imagedownloader.__version__,
+                     'keywords': keywords,
                      'date-published': date.today().strftime('%m-%d-%Y')}
         src_file = self.get_image_gene_node_attributes_file(fold)
         self._image_gene_attrid.append(self._provenance_utils.register_dataset(self._outdir,
-                                                                          source_file=src_file,
-                                                                          data_dict=data_dict))
+                                                                               source_file=src_file,
+                                                                               data_dict=data_dict))
 
     def _add_dataset_to_crate(self, data_dict=None,
                               source_file=None, skip_copy=True):
@@ -406,18 +456,18 @@ class CellmapsImageDownloader(object):
         else:
             generated = []
         if self._image_dataset_ids is not None:
-            if len(self._image_dataset_ids) > 2000:
-                logger.error('Too many images to register with FAIRSCAPE. registering 1st 2,000')
-                warnings.warn('Too many images to register with FAIRSCAPE. registering 1st 2,000')
-                generated.extend(self._image_dataset_ids[0:2000])
-            else:
-                generated.extend(self._image_dataset_ids)
+            generated.extend(self._image_dataset_ids)
+
+        keywords = self._provenance['keywords']
+        keywords.extend(['computation', 'download'])
+        description = self._provenance['description'] + ' run of ' + cellmaps_imagedownloader.__name__
 
         self._provenance_utils.register_computation(self._outdir,
                                                     name=cellmaps_imagedownloader.__name__ + ' computation',
                                                     run_by=str(self._provenance_utils.get_login()),
                                                     command=str(self._input_data_dict),
-                                                    description='run of ' + cellmaps_imagedownloader.__name__,
+                                                    description=description,
+                                                    keywords=keywords,
                                                     used_software=[self._softwareid],
                                                     used_dataset=[self._unique_datasetid, self._samples_datasetid],
                                                     generated=generated)
@@ -432,7 +482,9 @@ class CellmapsImageDownloader(object):
             self._provenance_utils.register_rocrate(self._outdir,
                                                     name=self._provenance['name'],
                                                     organization_name=self._provenance['organization-name'],
-                                                    project_name=self._provenance['project-name'])
+                                                    project_name=self._provenance['project-name'],
+                                                    description=self._provenance['description'],
+                                                    keywords=self._provenance['keywords'])
         except TypeError as te:
             raise CellMapsImageDownloaderError('Invalid provenance: ' + str(te))
         except KeyError as ke:
@@ -496,9 +548,9 @@ class CellmapsImageDownloader(object):
         :return:
         """
         data_dict = {'name': cellmaps_imagedownloader.__name__ + ' downloaded image file',
-                     'description': 'IF image file',
+                     'description': self._provenance['description'] + ' IF image file',
                      'data-format': self._imgsuffix,
-                     'author': 'Emma Lundberg',
+                     'author': '???',
                      'version': '???',
                      'date-published': date.today().strftime('%m-%d-%Y')}
 
@@ -512,6 +564,7 @@ class CellmapsImageDownloader(object):
                 fullpath = os.path.join(self._outdir, c, entry)
                 data_dict['name'] = entry + ' ' + c +\
                                     ' channel downloaded image file'
+                data_dict['keywords'] = [c, 'IF', 'image']
                 self._image_dataset_ids.append(self._add_dataset_to_crate(data_dict=data_dict,
                                                                           source_file=fullpath,
                                                                           skip_copy=True))
@@ -688,6 +741,8 @@ class CellmapsImageDownloader(object):
                                           handlerprefix='cellmaps_imagedownloader')
                 self._write_task_start_json()
 
+            self._update_provenance_with_description()
+            self._update_provenance_with_keywords()
             self._create_run_crate()
             self._register_samples_dataset()
             self._register_unique_dataset()
@@ -706,7 +761,6 @@ class CellmapsImageDownloader(object):
 
                 self._register_image_gene_node_attrs(fold)
 
-            # Todo: Right now only registering 2,000 images. need to fix
             self._register_downloaded_images()
 
             self._register_computation()

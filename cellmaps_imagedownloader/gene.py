@@ -99,7 +99,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
     """
 
     SAMPLES_HEADER_COLS = ['filename', 'if_plate_id',
-                           'position', 'sample', #'status',
+                           'position', 'sample',
                            'locations', 'antibody',
                            'ensembl_ids', 'gene_names']
     """
@@ -132,7 +132,6 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
              'if_plate_id': HPA PLATE ID,
              'position': POSITION,
              'sample': SAMPLE,
-             'status': STATUS,
              'locations': COMMA DELIMITED LOCATIONS,
              'antibody': ANTIBODY_ID,
              'ensembl_ids': COMMA DELIMITED ENSEMBLID IDS,
@@ -148,7 +147,6 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
              'if_plate_id': '1',
              'position': 'A1',
              'sample': '1',
-             'status': '35',
              'locations': 'Golgi apparatus',
              'antibody': 'HPA000992',
              'ensembl_ids': 'ENSG00000066455',

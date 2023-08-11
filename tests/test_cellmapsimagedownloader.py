@@ -42,7 +42,10 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
     def test_register_software(self):
         prov = MagicMock()
         prov.register_software = MagicMock(return_value='12345')
+        prov_json = {'keywords': ['hi'],
+                     'description': 'some desc'}
         myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance=prov_json,
                                         provenance_utils=prov)
         myobj._register_software()
         self.assertEqual('12345', myobj._softwareid)
@@ -55,8 +58,10 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
                          prov.register_software.call_args_list[0][1]['version'])
         self.assertEqual(cellmaps_imagedownloader.__author__,
                          prov.register_software.call_args_list[0][1]['author'])
-        self.assertEqual(cellmaps_imagedownloader.__description__,
+        self.assertEqual('some desc ' + cellmaps_imagedownloader.__description__,
                          prov.register_software.call_args_list[0][1]['description'])
+        self.assertEqual(['hi', 'tools', cellmaps_imagedownloader.__name__],
+                         prov.register_software.call_args_list[0][1]['keywords'])
         self.assertEqual(cellmaps_imagedownloader.__repo_url__,
                          prov.register_software.call_args_list[0][1]['url'])
         self.assertEqual('py',
@@ -66,7 +71,10 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
         prov = MagicMock()
         prov.register_dataset = MagicMock()
         prov.register_dataset.side_effect =['1', '2']
+        prov_json = {'keywords': ['hi'],
+                     'description': 'some desc'}
         myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance=prov_json,
                                         provenance_utils=prov)
         myobj._register_image_gene_node_attrs()
         myobj._register_image_gene_node_attrs(fold=2)
@@ -82,7 +90,10 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
     def test_add_dataset_to_crate(self):
         prov = MagicMock()
         prov.register_dataset = MagicMock(return_value='1')
+        prov_json = {'keywords': ['hi'],
+                     'description': 'some desc'}
         myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance=prov_json,
                                         provenance_utils=prov)
         self.assertEqual('1',
                          myobj._add_dataset_to_crate(data_dict={},
@@ -92,7 +103,10 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
         prov = MagicMock()
         prov.register_computation = MagicMock(return_value='1')
         prov.get_login = MagicMock(return_value='smith')
+        prov_json = {'keywords': ['hi'],
+                     'description': 'some desc'}
         myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance=prov_json,
                                         provenance_utils=prov)
         myobj._softwareid = 'softwareid'
         myobj._unique_datasetid = 'uniqueid'
@@ -107,8 +121,10 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
                          prov.register_computation.call_args_list[0][1]['run_by'])
         self.assertEqual('None',
                          prov.register_computation.call_args_list[0][1]['command'])
-        self.assertEqual('run of ' + cellmaps_imagedownloader.__name__,
+        self.assertEqual('some desc run of ' + cellmaps_imagedownloader.__name__,
                          prov.register_computation.call_args_list[0][1]['description'])
+        self.assertEqual(['hi', 'computation', 'download'],
+                         prov.register_computation.call_args_list[0][1]['keywords'])
         self.assertEqual(['softwareid'],
                          prov.register_computation.call_args_list[0][1]['used_software'])
         self.assertEqual(['uniqueid', 'samples'],
@@ -120,7 +136,10 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
         prov = MagicMock()
         prov.register_computation = MagicMock(return_value='1')
         prov.get_login = MagicMock(return_value='smith')
+        prov_json = {'keywords': ['hi'],
+                     'description': 'some desc'}
         myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance=prov_json,
                                         provenance_utils=prov)
         myobj._image_gene_attrid = ['image1']
         myobj._image_dataset_ids = ['1']
@@ -137,8 +156,10 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
                          prov.register_computation.call_args_list[0][1]['run_by'])
         self.assertEqual('None',
                          prov.register_computation.call_args_list[0][1]['command'])
-        self.assertEqual('run of ' + cellmaps_imagedownloader.__name__,
+        self.assertEqual('some desc run of ' + cellmaps_imagedownloader.__name__,
                          prov.register_computation.call_args_list[0][1]['description'])
+        self.assertEqual(['hi', 'computation', 'download'],
+                         prov.register_computation.call_args_list[0][1]['keywords'])
         self.assertEqual(['softwareid'],
                          prov.register_computation.call_args_list[0][1]['used_software'])
         self.assertEqual(['uniqueid', 'samples'],
@@ -150,7 +171,10 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
         prov = MagicMock()
         prov.register_computation = MagicMock(return_value='1')
         prov.get_login = MagicMock(return_value='smith')
+        prov_json = {'keywords': ['hi'],
+                     'description': 'some desc'}
         myobj = CellmapsImageDownloader(outdir='/foo',
+                                        provenance=prov_json,
                                         provenance_utils=prov)
         myobj._image_gene_attrid = ['image1', 'image2']
         myobj._image_dataset_ids = []
@@ -169,8 +193,11 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
                          prov.register_computation.call_args_list[0][1]['run_by'])
         self.assertEqual('None',
                          prov.register_computation.call_args_list[0][1]['command'])
-        self.assertEqual('run of ' + cellmaps_imagedownloader.__name__,
+        self.assertEqual('some desc run of ' + cellmaps_imagedownloader.__name__,
                          prov.register_computation.call_args_list[0][1]['description'])
+        self.assertEqual(['hi', 'computation', 'download'],
+                         prov.register_computation.call_args_list[0][1]['keywords'])
+
         self.assertEqual(['softwareid'],
                          prov.register_computation.call_args_list[0][1]['used_software'])
         self.assertEqual(['uniqueid', 'samples'],
@@ -208,11 +235,17 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
     def test_create_run_crate(self):
         prov = MagicMock()
         prov.register_rocrate = MagicMock()
+
         myobj = CellmapsImageDownloader(outdir='/foo',
                                         provenance_utils=prov,
                                         provenance={'name': 'foo',
                                                     'organization-name': 'icorp',
-                                                    'project-name': 'myproj'})
+                                                    'project-name': 'myproj',
+                                                    'cell-line': 'U2OS',
+                                                    'release': '0.1 alpha',
+                                                    'treatment': 'untreated'})
+        myobj._update_provenance_with_keywords()
+        myobj._update_provenance_with_description()
         myobj._create_run_crate()
         self.assertEqual(1, prov.register_rocrate.call_count)
         self.assertEqual('/foo',
@@ -223,6 +256,11 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
                          prov.register_rocrate.call_args_list[0][1]['organization_name'])
         self.assertEqual('myproj',
                          prov.register_rocrate.call_args_list[0][1]['project_name'])
+        self.assertEqual('myproj foo 0.1 alpha U2OS untreated IF microscopy images',
+                         prov.register_rocrate.call_args_list[0][1]['description'])
+        self.assertEqual(['icorp', 'myproj', '0.1 alpha', 'U2OS', 'untreated',
+                          'foo', 'IF', 'microscopy', 'images'],
+                         prov.register_rocrate.call_args_list[0][1]['keywords'])
 
     def test_register_samples_dataset_guid_already_set(self):
         myobj = CellmapsImageDownloader(outdir='/foo',

@@ -55,8 +55,6 @@ def _parse_arguments(desc, args):
                              'information about input files in JSON format. '
                              'This is required and not including will output '
                              'and error message with example of file')
-    parser.add_argument('--image_url', default='https://images.proteinatlas.org',
-                        help='Base URL for downloading IF images')
     parser.add_argument('--proteinatlasxml',
                         default=ProteinAtlasReader.DEFAULT_PROTEINATLAS_URL,
                         help='URL or path to proteinatlas.xml or proteinatlas.xml.gz file '
@@ -127,8 +125,8 @@ from HPA via --samples flag
 
 Format of CSV file:
 
-filename,if_plate_id,position,sample,status,locations,antibody,ensembl_ids,gene_names
-/archive/1/1_A1_1_,1,A1,1,35,Golgi apparatus,HPA000992,ENSG00000066455,GOLGA5
+filename,if_plate_id,position,sample,locations,antibody,ensembl_ids,gene_names
+/archive/1/1_A1_1_,1,A1,1,Golgi apparatus,HPA000992,ENSG00000066455,GOLGA5
 
 Definition of columns:
 
@@ -136,7 +134,6 @@ Definition of columns:
 * if_plate_id - ID of plate for acquired image (int)
 * position - Position in plate for acquired image (string)
 * sample - Sample number identifier for acquired image (int)
-* status - Unknown 
 * locations - Comma delimited list of manual annotations for image (string)
 * antibody - Name of antibody used for acquired image (string)
 * ensembl_ids - Comma delimited list of Ensembl IDs (string)
