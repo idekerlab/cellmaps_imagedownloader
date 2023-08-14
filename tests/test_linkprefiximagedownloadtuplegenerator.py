@@ -62,5 +62,7 @@ class TestLinkPrefixImageDownloadTupleGenerator(unittest.TestCase):
         self.assertEqual(8, len(res))
 
         for c in ['red', 'green', 'blue', 'yellow']:
-            self.assertTrue(('http://x_' + c + '.jpg', '/' + c +'/A_B_C_' + c +'.jpg') in res)
-            self.assertTrue(('http://y_' + c + '.jpg', '/' + c + '/D_E_F_' + c + '.jpg') in res)
+            self.assertTrue(('http://x_' + c + '.jpg', '/' + c + '/A_B_C_' +
+                             c + '.jpg') in res)
+            self.assertTrue(('http://y_' + c + '.jpg', '/' + c + '/D_E_F_' +
+                             c + '.jpg') in res)
