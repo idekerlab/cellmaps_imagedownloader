@@ -343,7 +343,7 @@ class CellmapsImageDownloader(object):
                     'cell-line', 'treatment', 'name']:
             if key in self._provenance:
                 keywords.append(self._provenance[key])
-        keywords.extend(['IF', 'microscopy', 'images'])
+        keywords.extend(['IF microscopy', 'images'])
         self._provenance['keywords'] = keywords
 
     def _update_provenance_with_description(self):

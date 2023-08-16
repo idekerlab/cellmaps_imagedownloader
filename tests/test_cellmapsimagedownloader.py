@@ -259,7 +259,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
         self.assertEqual('myproj foo 0.1 alpha U2OS untreated IF microscopy images',
                          prov.register_rocrate.call_args_list[0][1]['description'])
         self.assertEqual(['icorp', 'myproj', '0.1 alpha', 'U2OS', 'untreated',
-                          'foo', 'IF', 'microscopy', 'images'],
+                          'foo', 'IF microscopy', 'images'],
                          prov.register_rocrate.call_args_list[0][1]['keywords'])
 
     def test_register_samples_dataset_guid_already_set(self):
