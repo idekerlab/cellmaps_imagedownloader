@@ -563,7 +563,10 @@ class CellmapsImageDownloader(object):
                     continue
                 fullpath = os.path.join(self._outdir, c, entry)
                 data_dict['name'] = entry + ' ' + c +\
-                                    ' channel downloaded image file'
+                                    ' channel image'
+                if len(data_dict['name']) >= 64:
+                    data_dict['name'] = data_dict['name'][:63]
+
                 data_dict['keywords'] = [c, 'IF', 'image']
                 self._image_dataset_ids.append(self._add_dataset_to_crate(data_dict=data_dict,
                                                                           source_file=fullpath,

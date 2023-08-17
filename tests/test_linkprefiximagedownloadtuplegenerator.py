@@ -66,3 +66,4 @@ class TestLinkPrefixImageDownloadTupleGenerator(unittest.TestCase):
                              c + '.jpg') in res)
             self.assertTrue(('http://y_' + c + '.jpg', '/' + c + '/D_E_F_' +
                              c + '.jpg') in res)
+
