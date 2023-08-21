@@ -11,7 +11,6 @@ Cell Maps ImmunoFluorescent Image Downloader
 
 
 Downloads ImmunoFluorescent image data from `Human Protein Atlas <https://www.proteinatlas.org/>`__
-used by `Cell Maps for AI (CM4AI) <https://cm4ai.org>`__
 
 
 .. toctree::

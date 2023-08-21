@@ -15,7 +15,6 @@ Cell Maps ImmunoFluorescent Image Downloader
 
 
 Downloads ImmunoFluorescent image data from `Human Protein Atlas <https://www.proteinatlas.org/>`__
-used by `Cell Maps for AI (CM4AI) <https://cm4ai.org>`__
 
 
 * Free software: MIT license
@@ -85,8 +84,9 @@ Output:
 Needed files
 ------------
 
-**TODO:** Add description of needed files
-
+* samples file: CSV file with list of IF images to download (see sample samples file in examples folder)
+* unique file: CSV file of unique samples (see sample unique file in examples folder)
+* provenance: file containing provenance information about input files in JSON format (see sample provenance file in examples folder)
 
 Usage
 -----
@@ -98,7 +98,7 @@ For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
 
 .. code-block::
 
-    cellmaps_imagedownloadercmd.py
+    cellmaps_imagedownloadercmd.py ./cellmaps_imagedownloader_outdir  --samples examples/samples.csv --unique examples/unique.csv --provenance examples/provenance.json
 
 
 Via Docker
@@ -106,12 +106,10 @@ Via Docker
 
 **Example usage**
 
-**TODO:** Add information about example usage
-
 
 .. code-block::
 
-   docker run -v `pwd`:`pwd` -w `pwd` idekerlab/cellmaps_imagedownloader:0.1.0 cellmaps_imagedownloadercmd.py # TODO Add other needed arguments here
+   docker run -v `pwd`:`pwd` -w `pwd` idekerlab/cellmaps_imagedownloader:0.1.0 cellmaps_imagedownloadercmd.py ./cellmaps_imagedownloader_outdir --samples examples/samples.csv --unique examples/unique.csv --provenance examples/provenance.json
 
 
 Credits
