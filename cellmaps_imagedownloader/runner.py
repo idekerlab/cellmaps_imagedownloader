@@ -99,6 +99,37 @@ class ImageDownloader(object):
         raise CellMapsImageDownloaderError('Subclasses should implement this')
 
 
+class CM4AICopyDownloader(ImageDownloader):
+    """
+    Copies over images from CM4AI RO-Crate
+    """
+    def __init__(self):
+        """
+        Constructor
+        """
+        super().__init__()
+
+    def download_images(self, download_list=None):
+        """
+        Subclasses should implement
+
+        :param download_list: list of tuples where first element is
+                              full URL of image to download and 2nd
+                              element is destination path
+        :type download_list: list
+        :return:
+        """
+        num_to_copy = len(download_list)
+        logger.info(str(num_to_copy) + ' images to copy')
+        t = tqdm(total=num_to_copy, desc='Copy',
+                 unit='images')
+        for entry in download_list:
+            t.update()
+            shutil.copy(entry[0], entry[1])
+
+        return []
+
+
 class FakeImageDownloader(ImageDownloader):
     """
     Creates fake download by downloading
@@ -501,7 +532,10 @@ class CellmapsImageDownloader(object):
 
         # if input file for samples was not set then write the samples we
         # have to the output directory and use that path as dataset to register
-        if self._input_data_dict is None or CellmapsImageDownloader.SAMPLES_FILEKEY not in self._input_data_dict:
+        if self._input_data_dict is None or\
+              CellmapsImageDownloader.SAMPLES_FILEKEY not in self._input_data_dict or\
+              self._input_data_dict[CellmapsImageDownloader.SAMPLES_FILEKEY] is None:
+            logger.debug('no samples passed in, just write out copy to output directory')
             samples_file = os.path.join(self._outdir, 'samplescopy.csv')
             self._imagegen.write_samples_to_csvfile(csvfile=samples_file)
             skip_samples_copy = True
@@ -527,7 +561,9 @@ class CellmapsImageDownloader(object):
 
         # if input file for unique list was not set then write the unique list we
         # have to the output directory and use that path as dataset to register
-        if self._input_data_dict is None or CellmapsImageDownloader.UNIQUE_FILEKEY not in self._input_data_dict:
+        if self._input_data_dict is None or\
+              CellmapsImageDownloader.UNIQUE_FILEKEY not in self._input_data_dict or\
+              self._input_data_dict[CellmapsImageDownloader.UNIQUE_FILEKEY] is None:
             unique_file = os.path.join(self._outdir, 'uniquecopy.csv')
             self._imagegen.write_unique_list_to_csvfile(csvfile=unique_file)
             skip_unique_copy = True

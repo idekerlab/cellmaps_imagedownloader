@@ -30,6 +30,7 @@ with open('HISTORY.rst') as history_file:
 requirements = ['cellmaps_utils',
                 'requests',
                 'mygene',
+                'pandas',
                 'tqdm']
 
 setup_requirements = [ ]
