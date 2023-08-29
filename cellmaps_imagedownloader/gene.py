@@ -408,10 +408,16 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         :rtype: list
         """
         id_set = set()
-
         for row in self._samples_list:
             geneid=row[column]
-            split_str = re.split('\W*,\W*', geneid)
+
+            if str(geneid) == 'nan':
+                logger.info('Skipping because row has nan: ' + str(row))
+                continue
+            if ';' in geneid:
+                split_str = re.split('\W*;\W*', geneid)
+            else:
+                split_str = re.split('\W*,\W*', geneid)
             id_set.update(split_str)
 
         return list(id_set)
@@ -462,6 +468,10 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
             antibody = sample['antibody']
             if allowed_antibodies is not None and antibody not in allowed_antibodies:
                 # skipping cause antibody is not in allowed set
+                continue
+
+            if str(sample['ensembl_ids']) == 'nan':
+                # skipping because these are most likely negative control entries
                 continue
 
             ensembl_ids = sample['ensembl_ids'].split(',')
