@@ -217,21 +217,19 @@ Additional optional fields for registering datasets include
         if theargs.cm4ai_table is not None:
             converter = CM4AITableConverter(cm4ai=theargs.cm4ai_table)
             samples_list, unique_list = converter.get_samples_and_unique_lists()
+            dloader = CM4AICopyDownloader()
         else:
             samples_list = ImageGeneNodeAttributeGenerator.get_samples_from_csvfile(theargs.samples)
             unique_list = ImageGeneNodeAttributeGenerator.get_unique_list_from_csvfile(theargs.unique)
+            if theargs.fake_images is True:
+                warnings.warn('FAKE IMAGES ARE BEING DOWNLOADED!!!!!')
+                dloader = FakeImageDownloader()
+            else:
+                dloader = MultiProcessImageDownloader(poolsize=theargs.poolsize,
+                                                      skip_existing=theargs.skip_existing)
 
         imagegen = ImageGeneNodeAttributeGenerator(unique_list=unique_list,
                                                    samples_list=samples_list)
-
-        if theargs.cm4ai_table is not None:
-            dloader = CM4AICopyDownloader()
-        elif theargs.fake_images is True:
-            warnings.warn('FAKE IMAGES ARE BEING DOWNLOADED!!!!!')
-            dloader = FakeImageDownloader()
-        else:
-            dloader = MultiProcessImageDownloader(poolsize=theargs.poolsize,
-                                                  skip_existing=theargs.skip_existing)
 
         if theargs.cm4ai_table is not None:
             imageurlgen = CM4AIImageCopyTupleGenerator(samples_list=imagegen.get_samples_list())
