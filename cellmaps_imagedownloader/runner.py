@@ -346,7 +346,8 @@ class CellmapsImageDownloader(object):
                      'project-name': 'Name of funding source or project',
                      'cell-line': 'Name of cell line. Ex: U2OS',
                      'treatment': 'Name of treatment, Ex: untreated',
-                     'release': 'Name of release. Example: 0.1 alpha'}
+                     'release': 'Name of release. Example: 0.1 alpha',
+                     'gene-set': 'Name of gene set. Example chromatin'}
         if with_ids is not None and with_ids is True:
             guid_dict = ProvenanceUtil.example_dataset_provenance(with_ids=with_ids)
             base_dict.update({CellmapsImageDownloader.SAMPLES_FILEKEY: guid_dict,
@@ -371,7 +372,7 @@ class CellmapsImageDownloader(object):
             return
         keywords = []
         for key in ['organization-name', 'project-name', 'release',
-                    'cell-line', 'treatment', 'name']:
+                    'cell-line', 'treatment', 'name', 'gene-set']:
             if key in self._provenance:
                 keywords.append(self._provenance[key])
         keywords.extend(['IF microscopy', 'images'])
@@ -387,7 +388,7 @@ class CellmapsImageDownloader(object):
             return
         desc = ''
         for key in ['project-name', 'name', 'release',
-                    'cell-line', 'treatment']:
+                    'cell-line', 'treatment', 'gene-set']:
             if key in self._provenance:
                 if desc != '':
                     desc += ' '
@@ -758,7 +759,10 @@ class CellmapsImageDownloader(object):
             image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' + \
                        sample['filename']
             if image_id in sample_urlmap:
-                gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = sample_urlmap[image_id]
+                if sample_urlmap[image_id].startswith('http'):
+                    gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = sample_urlmap[image_id]
+                else:
+                    gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = 'no image url found'
             else:
                 # this should NOT happen, but just in case
                 logger.error(image_id + ' not in sample urlmap. setting to no image url found')
