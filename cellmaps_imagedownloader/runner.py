@@ -372,7 +372,7 @@ class CellmapsImageDownloader(object):
             return
         keywords = []
         for key in ['organization-name', 'project-name', 'release',
-                    'cell-line', 'treatment', 'name', 'gene-set']:
+                    'cell-line', 'treatment', 'gene-set', 'name']:
             if key in self._provenance:
                 keywords.append(self._provenance[key])
         keywords.extend(['IF microscopy', 'images'])
@@ -495,7 +495,7 @@ class CellmapsImageDownloader(object):
         description = self._provenance['description'] + ' run of ' + cellmaps_imagedownloader.__name__
 
         self._provenance_utils.register_computation(self._outdir,
-                                                    name=cellmaps_imagedownloader.__name__ + ' computation',
+                                                    name=cellmaps_imagedownloader.__computation_name__,
                                                     run_by=str(self._provenance_utils.get_login()),
                                                     command=str(self._input_data_dict),
                                                     description=description,
