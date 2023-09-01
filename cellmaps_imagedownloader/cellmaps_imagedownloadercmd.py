@@ -13,11 +13,14 @@ import cellmaps_imagedownloader
 from cellmaps_imagedownloader.runner import MultiProcessImageDownloader
 from cellmaps_imagedownloader.runner import FakeImageDownloader
 from cellmaps_imagedownloader.runner import CellmapsImageDownloader
+from cellmaps_imagedownloader.runner import CM4AICopyDownloader
 from cellmaps_imagedownloader.gene import ImageGeneNodeAttributeGenerator
+from cellmaps_imagedownloader.gene import CM4AITableConverter
 from cellmaps_imagedownloader.proteinatlas import ProteinAtlasReader
 from cellmaps_imagedownloader.proteinatlas import ProteinAtlasImageUrlReader
 from cellmaps_imagedownloader.proteinatlas import ImageDownloadTupleGenerator
 from cellmaps_imagedownloader.proteinatlas import LinkPrefixImageDownloadTupleGenerator
+from cellmaps_imagedownloader.proteinatlas import CM4AIImageCopyTupleGenerator
 
 
 logger = logging.getLogger(__name__)
@@ -38,6 +41,14 @@ def _parse_arguments(desc, args):
                                      formatter_class=constants.ArgParseFormatter)
     parser.add_argument('outdir',
                         help='Directory to write results to')
+    parser.add_argument('--cm4ai_table',
+                        help='Path to TSV file in CM4AI RO-Crate directory. '
+                             ' It is expected the directory also contains '
+                             'red/ blue/ green/ yellow/ directories with images. '
+                             'The TSV file is expected to have the following '
+                             'columns: Antibody ID     ENSEMBL ID      '
+                             'Treatment      '
+                             ' Well    Region')
     parser.add_argument('--samples',
                         help='CSV file with list of IF images to download '
                              'in format of filename,if_plate_id,position,'
@@ -202,18 +213,27 @@ Additional optional fields for registering datasets include
         # load the provenance as a dict
         with open(theargs.provenance, 'r') as f:
             json_prov = json.load(f)
-        imagegen = ImageGeneNodeAttributeGenerator(unique_list=ImageGeneNodeAttributeGenerator.get_unique_list_from_csvfile(theargs.unique),
-                                                   samples_list=ImageGeneNodeAttributeGenerator.get_samples_from_csvfile(theargs.samples))
 
-        if theargs.fake_images is True:
-            warnings.warn('FAKE IMAGES ARE BEING DOWNLOADED!!!!!')
-            dloader = FakeImageDownloader()
+        if theargs.cm4ai_table is not None:
+            converter = CM4AITableConverter(cm4ai=theargs.cm4ai_table)
+            samples_list, unique_list = converter.get_samples_and_unique_lists()
+            dloader = CM4AICopyDownloader()
         else:
-            dloader = MultiProcessImageDownloader(poolsize=theargs.poolsize,
-                                                  skip_existing=theargs.skip_existing)
+            samples_list = ImageGeneNodeAttributeGenerator.get_samples_from_csvfile(theargs.samples)
+            unique_list = ImageGeneNodeAttributeGenerator.get_unique_list_from_csvfile(theargs.unique)
+            if theargs.fake_images is True:
+                warnings.warn('FAKE IMAGES ARE BEING DOWNLOADED!!!!!')
+                dloader = FakeImageDownloader()
+            else:
+                dloader = MultiProcessImageDownloader(poolsize=theargs.poolsize,
+                                                      skip_existing=theargs.skip_existing)
 
-        print(imagegen.get_samples_list()[0])
-        if 'linkprefix' in imagegen.get_samples_list()[0]:
+        imagegen = ImageGeneNodeAttributeGenerator(unique_list=unique_list,
+                                                   samples_list=samples_list)
+
+        if theargs.cm4ai_table is not None:
+            imageurlgen = CM4AIImageCopyTupleGenerator(samples_list=imagegen.get_samples_list())
+        elif 'linkprefix' in imagegen.get_samples_list()[0]:
             imageurlgen = LinkPrefixImageDownloadTupleGenerator(samples_list=imagegen.get_samples_list())
         else:
             proteinatlas_reader = ProteinAtlasReader(theargs.outdir, proteinatlas=theargs.proteinatlasxml)

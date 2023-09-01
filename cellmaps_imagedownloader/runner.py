@@ -99,6 +99,37 @@ class ImageDownloader(object):
         raise CellMapsImageDownloaderError('Subclasses should implement this')
 
 
+class CM4AICopyDownloader(ImageDownloader):
+    """
+    Copies over images from CM4AI RO-Crate
+    """
+    def __init__(self):
+        """
+        Constructor
+        """
+        super().__init__()
+
+    def download_images(self, download_list=None):
+        """
+        Subclasses should implement
+
+        :param download_list: list of tuples where first element is
+                              full URL of image to download and 2nd
+                              element is destination path
+        :type download_list: list
+        :return:
+        """
+        num_to_copy = len(download_list)
+        logger.info(str(num_to_copy) + ' images to copy')
+        t = tqdm(total=num_to_copy, desc='Copy',
+                 unit='images')
+        for entry in download_list:
+            t.update()
+            shutil.copy(entry[0], entry[1])
+
+        return []
+
+
 class FakeImageDownloader(ImageDownloader):
     """
     Creates fake download by downloading
@@ -315,7 +346,8 @@ class CellmapsImageDownloader(object):
                      'project-name': 'Name of funding source or project',
                      'cell-line': 'Name of cell line. Ex: U2OS',
                      'treatment': 'Name of treatment, Ex: untreated',
-                     'release': 'Name of release. Example: 0.1 alpha'}
+                     'release': 'Name of release. Example: 0.1 alpha',
+                     'gene-set': 'Name of gene set. Example chromatin'}
         if with_ids is not None and with_ids is True:
             guid_dict = ProvenanceUtil.example_dataset_provenance(with_ids=with_ids)
             base_dict.update({CellmapsImageDownloader.SAMPLES_FILEKEY: guid_dict,
@@ -340,7 +372,7 @@ class CellmapsImageDownloader(object):
             return
         keywords = []
         for key in ['organization-name', 'project-name', 'release',
-                    'cell-line', 'treatment', 'name']:
+                    'cell-line', 'treatment', 'gene-set', 'name']:
             if key in self._provenance:
                 keywords.append(self._provenance[key])
         keywords.extend(['IF microscopy', 'images'])
@@ -355,8 +387,8 @@ class CellmapsImageDownloader(object):
             logger.warning('Provenance is None')
             return
         desc = ''
-        for key in ['project-name', 'name', 'release',
-                    'cell-line', 'treatment']:
+        for key in ['organization-name', 'project-name', 'release',
+                    'cell-line', 'treatment', 'gene-set', 'name']:
             if key in self._provenance:
                 if desc != '':
                     desc += ' '
@@ -423,7 +455,7 @@ class CellmapsImageDownloader(object):
                      'author': cellmaps_imagedownloader.__name__,
                      'version': cellmaps_imagedownloader.__version__,
                      'keywords': keywords,
-                     'date-published': date.today().strftime('%m-%d-%Y')}
+                     'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
         src_file = self.get_image_gene_node_attributes_file(fold)
         self._image_gene_attrid.append(self._provenance_utils.register_dataset(self._outdir,
                                                                                source_file=src_file,
@@ -463,7 +495,7 @@ class CellmapsImageDownloader(object):
         description = self._provenance['description'] + ' run of ' + cellmaps_imagedownloader.__name__
 
         self._provenance_utils.register_computation(self._outdir,
-                                                    name=cellmaps_imagedownloader.__name__ + ' computation',
+                                                    name=cellmaps_imagedownloader.__computation_name__,
                                                     run_by=str(self._provenance_utils.get_login()),
                                                     command=str(self._input_data_dict),
                                                     description=description,
@@ -501,7 +533,10 @@ class CellmapsImageDownloader(object):
 
         # if input file for samples was not set then write the samples we
         # have to the output directory and use that path as dataset to register
-        if self._input_data_dict is None or CellmapsImageDownloader.SAMPLES_FILEKEY not in self._input_data_dict:
+        if self._input_data_dict is None or\
+              CellmapsImageDownloader.SAMPLES_FILEKEY not in self._input_data_dict or\
+              self._input_data_dict[CellmapsImageDownloader.SAMPLES_FILEKEY] is None:
+            logger.debug('no samples passed in, just write out copy to output directory')
             samples_file = os.path.join(self._outdir, 'samplescopy.csv')
             self._imagegen.write_samples_to_csvfile(csvfile=samples_file)
             skip_samples_copy = True
@@ -527,7 +562,9 @@ class CellmapsImageDownloader(object):
 
         # if input file for unique list was not set then write the unique list we
         # have to the output directory and use that path as dataset to register
-        if self._input_data_dict is None or CellmapsImageDownloader.UNIQUE_FILEKEY not in self._input_data_dict:
+        if self._input_data_dict is None or\
+              CellmapsImageDownloader.UNIQUE_FILEKEY not in self._input_data_dict or\
+              self._input_data_dict[CellmapsImageDownloader.UNIQUE_FILEKEY] is None:
             unique_file = os.path.join(self._outdir, 'uniquecopy.csv')
             self._imagegen.write_unique_list_to_csvfile(csvfile=unique_file)
             skip_unique_copy = True
@@ -552,7 +589,7 @@ class CellmapsImageDownloader(object):
                      'data-format': self._imgsuffix,
                      'author': '???',
                      'version': '???',
-                     'date-published': date.today().strftime('%m-%d-%Y')}
+                     'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
 
         self._image_dataset_ids = []
 
@@ -722,7 +759,10 @@ class CellmapsImageDownloader(object):
             image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' + \
                        sample['filename']
             if image_id in sample_urlmap:
-                gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = sample_urlmap[image_id]
+                if sample_urlmap[image_id].startswith('http'):
+                    gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = sample_urlmap[image_id]
+                else:
+                    gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = 'no image url found'
             else:
                 # this should NOT happen, but just in case
                 logger.error(image_id + ' not in sample urlmap. setting to no image url found')

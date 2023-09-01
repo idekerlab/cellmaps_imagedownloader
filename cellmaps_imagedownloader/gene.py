@@ -1,8 +1,10 @@
 
+import os
 import re
 import csv
 import mygene
 import logging
+import pandas as pd
 from tqdm import tqdm
 
 from cellmaps_imagedownloader.exceptions import CellMapsImageDownloaderError
@@ -72,6 +74,96 @@ class GeneQuery(object):
                              scopes=scopes,
                              fields=['ensembl.gene', 'symbol'])
         return res
+
+
+class CM4AITableConverter(object):
+    """
+    Converts CM4AI table in an RO-Crate to
+    samples and unique lists compatible with
+    :py:class:`~cellmaps_imagedownloader.gene.ImageGeneNodeAttributeGenerator`
+    """
+    def __init__(self, cm4ai=None,
+                 fileprefix='B2AI_1_',
+                 cell_line='MDA-MB-468'):
+        """
+        Constructor
+
+        :param cm4ai: Path to CM4AI RO-Crate, or CM4AI RO-Crate antibody_gene_table or
+                      URL where CM4AI RO-Crate can be downloaded
+        :type cm4ai: str
+        """
+        self._cm4ai = cm4ai
+        self._fileprefix = fileprefix
+        self._cell_line = cell_line
+
+    def get_samples_and_unique_lists(self):
+        """
+        Gets samples and unique list compatible with
+        :py:class:`~cellmaps_imagedownloader.gene.ImageGeneNodeAttributeGenerator`
+        :return: (samples list, unique list)
+        :rtype: tuple
+        """
+        if os.path.isfile(self._cm4ai):
+            # assume we have a table file
+            samples_df = self._get_samples_from_cm4ai_table_as_dataframe(self._cm4ai)
+            unique_df = self._get_unique_dataframe_from_samples_dataframe(samples_df=samples_df)
+            return (samples_df.to_dict(orient='records'),
+                    unique_df.to_dict(orient='records'))
+
+        return None, None
+
+    def _get_unique_dataframe_from_samples_dataframe(self, samples_df=None):
+        """
+
+        :param samples_df:
+        :return:
+        """
+        unique_df = samples_df.copy(deep=True)
+        unique_df = unique_df.groupby('antibody').head(1).reset_index(drop=True)
+        unique_df.drop(['filename', 'position', 'sample', 'if_plate_id',
+                        'linkprefix'], axis=1, inplace=True)
+        unique_df['n_location'] = 0
+        unique_df['atlas_name'] = self._cell_line
+        unique_df = unique_df[['antibody', 'ensembl_ids', 'gene_names',
+                               'atlas_name', 'locations', 'n_location']]
+        return unique_df
+
+    def _get_samples_from_cm4ai_table_as_dataframe(self, table=None):
+        """
+        Loads table as a pandas data frame
+        :param table:
+        :type table: str
+        :return:
+        """
+        df = pd.read_csv(table, sep='\t')
+
+        # rename main columns
+        df.rename(columns={'Antibody ID': 'antibody',
+                           'Well': 'position',
+                           'Region': 'sample',
+                           'ENSEMBL ID': 'ensembl_ids'}, inplace=True)
+
+        # add locations column and genes column
+        df['locations'] = ''
+        df['gene_names'] = ''
+        df['linkprefix'] = os.path.dirname(self._cm4ai)
+
+        # for if_plate_id use prefix B2AI_1_<treatment>
+        df['if_plate_id'] = self._fileprefix + df['Treatment'].astype(str)
+        # for filename use prefix B2AI_1_<treatment>_position_sample_
+        df['filename'] = self._fileprefix + df['Treatment'].astype(str) +\
+                          '_' + df['position'].astype(str) + '_' +\
+                            df['sample'].astype(str) + '_'
+
+        # remove treatment
+        df.drop('Treatment', axis=1, inplace=True)
+
+        # reorder
+        final_sample_df = df[['filename', 'if_plate_id', 'position',
+                              'sample', 'locations', 'antibody', 'ensembl_ids',
+                              'gene_names', 'linkprefix']]
+
+        return final_sample_df
 
 
 class GeneNodeAttributeGenerator(object):
@@ -286,7 +378,14 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                                     delimiter=',')
             writer.writeheader()
             for sample in self._samples_list:
-                writer.writerow(sample)
+
+                # Todo clean this up because its such a hack
+                if 'linkprefix' in sample:
+                    row_copy = sample.copy()
+                    del row_copy['linkprefix']
+                else:
+                    row_copy = sample
+                writer.writerow(row_copy)
 
     def _get_unique_ids_from_samplelist(self, column='ensembl_ids'):
         """
@@ -309,10 +408,16 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         :rtype: list
         """
         id_set = set()
-
         for row in self._samples_list:
             geneid=row[column]
-            split_str = re.split('\W*,\W*', geneid)
+
+            if str(geneid) == 'nan':
+                logger.info('Skipping because row has nan: ' + str(row))
+                continue
+            if ';' in geneid:
+                split_str = re.split('\W*;\W*', geneid)
+            else:
+                split_str = re.split('\W*,\W*', geneid)
             id_set.update(split_str)
 
         return list(id_set)
@@ -363,6 +468,10 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
             antibody = sample['antibody']
             if allowed_antibodies is not None and antibody not in allowed_antibodies:
                 # skipping cause antibody is not in allowed set
+                continue
+
+            if str(sample['ensembl_ids']) == 'nan':
+                # skipping because these are most likely negative control entries
                 continue
 
             ensembl_ids = sample['ensembl_ids'].split(',')

@@ -1,4 +1,5 @@
 cellmaps_utils
 requests
-tqdm
 mygene
+pandas
+tqdm
