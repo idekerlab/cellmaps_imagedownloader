@@ -19,6 +19,7 @@ Downloads ImmunoFluorescent image data from `Human Protein Atlas <https://www.pr
 
    installation
    usage
+   outputs
    modules
    developer
    authors

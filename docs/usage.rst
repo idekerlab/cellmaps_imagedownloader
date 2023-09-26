@@ -2,7 +2,9 @@
 Usage
 =====
 
-This page should provide information on how to use cellmaps_imagedownloader
+This script facilitates the downloading of immunofluorescent labeled images from the Human Protein Atlas (HPA).
+The tool requires an output directory to write results to and either a TSV file in CM4AI RO-Crate format,
+or CSV file with list of IF images to download and CSV file of unique samples.
 
 In a project
 --------------
@@ -16,9 +18,50 @@ On the command line
 
 For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
 
+**Usage**
+
+.. code-block::
+
+  cellmaps_imagedownloadercmd.py OUTPUT_DIRECTORY [--provenance PROVENANCE_PATH] [OPTIONS]
+
+**Arguments**
+
+- ``outdir``
+    The directory where the output will be written to.
+
+*Required*
+
+- ``--provenance PROVENANCE_PATH``
+    Path to file containing provenance information about input files in JSON format.
+
+*Optional but either `samples` and `unique` parameters, or `cm4ai_table` parameter is required*
+
+- ``--samples SAMPLES_PATH``
+    CSV file with list of IF images to download. The file follow a specific format with columns such as
+    filename, if_plate_id, position, sample, locations, antibody, ensembl_ids, and gene_names.
+
+- ``--unique UNIQUE_PATH``
+    CSV file of unique samples. The file should have columns like antibody, ensembl_ids, gene_names, atlas_name, locations, and n_location.
+
+- ``--cm4ai_table CM4AI_TABLE_PATH``
+    Path to TSV file in CM4AI RO-Crate directory.
+
+*Optional*
+
+- ``--proteinatlasxml``: URL or path to ``proteinatlas.xml`` or ``proteinatlas.xml.gz`` file.
+- ``--fake_images``: If set, the first image of each color is downloaded, and subsequent images are copies of those images.
+- ``--poolsize``: If using multiprocessing image downloader, this sets the number of current downloads to run.
+- ``--imgsuffix``: Suffix for images to download (default is ``.jpg``).
+- ``--skip_existing``: If set, skips download if the image already exists and has a size greater than 0 bytes.
+- ``--skip_failed``: If set, ignores images that failed to download after retries.
+- ``--logconf``: Path to the python logging configuration file.
+- ``--skip_logging``: If set, certain log files will not be created.
+- ``--verbose``, ``-v``: Increases verbosity of logger to standard error for log messages.
+- ``--version``: Shows the current version of the tool.
+
 **Example usage**
 
-The cell maps image downloader requires the following input files: 
+The cell maps image downloader requires the following input files:
 
 1) samples file: CSV file with list of IF images to download (see sample samples file in examples folder)
 2) unique file: CSV file of unique samples (see sample unique file in examples folder)
