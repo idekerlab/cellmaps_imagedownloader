@@ -61,7 +61,15 @@ For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
 
 **Example usage**
 
-The cell maps image downloader requires the following input files:
+The example file can be downloaded from `cm4ai.org <https://cm4ai.org>`. Go to Products -> Data, log in, and download file for IF images with the desired treatment,
+then unpack the tar gz (tar -xzvf filename.tar.gz).
+
+.. code-block::
+
+   cellmaps_imagedownloadercmd.py ./cellmaps_imagedownloader_outdir  --cm4ai_table path/to/downloaded/unpacked/dir --provenance examples/provenance.json
+
+
+Alternatively, use the files in the example directory in the repository:
 
 1) samples file: CSV file with list of IF images to download (see sample samples file in examples folder)
 2) unique file: CSV file of unique samples (see sample unique file in examples folder)
