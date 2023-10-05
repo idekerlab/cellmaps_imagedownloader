@@ -69,6 +69,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
 
     def test_register_image_gene_node_attrs(self):
         prov = MagicMock()
+        prov.get_default_date_format_str = MagicMock(return_value='%Y-%m-%d')
         prov.register_dataset = MagicMock()
         prov.register_dataset.side_effect =['1', '2']
         prov_json = {'keywords': ['hi'],
@@ -115,7 +116,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
         self.assertEqual(1, prov.register_computation.call_count)
         self.assertEqual('/foo',
                          prov.register_computation.call_args_list[0][0][0])
-        self.assertEqual(cellmaps_imagedownloader.__name__ + ' computation',
+        self.assertEqual('IF Image Loader',
                          prov.register_computation.call_args_list[0][1]['name'])
         self.assertEqual('smith',
                          prov.register_computation.call_args_list[0][1]['run_by'])
@@ -150,7 +151,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
         self.assertEqual(1, prov.register_computation.call_count)
         self.assertEqual('/foo',
                          prov.register_computation.call_args_list[0][0][0])
-        self.assertEqual(cellmaps_imagedownloader.__name__ + ' computation',
+        self.assertEqual('IF Image Loader',
                          prov.register_computation.call_args_list[0][1]['name'])
         self.assertEqual('smith',
                          prov.register_computation.call_args_list[0][1]['run_by'])
@@ -187,7 +188,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
         self.assertEqual(1, prov.register_computation.call_count)
         self.assertEqual('/foo',
                          prov.register_computation.call_args_list[0][0][0])
-        self.assertEqual(cellmaps_imagedownloader.__name__ + ' computation',
+        self.assertEqual('IF Image Loader',
                          prov.register_computation.call_args_list[0][1]['name'])
         self.assertEqual('smith',
                          prov.register_computation.call_args_list[0][1]['run_by'])
@@ -256,7 +257,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
                          prov.register_rocrate.call_args_list[0][1]['organization_name'])
         self.assertEqual('myproj',
                          prov.register_rocrate.call_args_list[0][1]['project_name'])
-        self.assertEqual('myproj foo 0.1 alpha U2OS untreated IF microscopy images',
+        self.assertEqual('icorp myproj 0.1 alpha U2OS untreated foo IF microscopy images',
                          prov.register_rocrate.call_args_list[0][1]['description'])
         self.assertEqual(['icorp', 'myproj', '0.1 alpha', 'U2OS', 'untreated',
                           'foo', 'IF microscopy', 'images'],
