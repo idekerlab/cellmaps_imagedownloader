@@ -272,7 +272,7 @@ class CellmapsImageDownloader(object):
                  imagedownloader=MultiProcessImageDownloader(),
                  imagegen=None,
                  imageurlgen=None,
-                 skip_logging=False,
+                 skip_logging=True,
                  provenance=None,
                  input_data_dict=None,
                  provenance_utils=ProvenanceUtil(),
@@ -290,7 +290,7 @@ class CellmapsImageDownloader(object):
         :type imagegen: :py:class:`~cellmaps_imagedownloader.gene.ImageGeneNodeAttributeGenerator`
         :param image_url: Base URL for image download from Human Protein Atlas
         :type image_url: str
-        :param skip_logging: If ``True`` skip logging
+        :param skip_logging: If ``True`` skip logging, if ``None`` or ``False`` do NOT skip logging
         :type skip_logging: bool
         :param provenance:
         :type provenance: dict
@@ -782,7 +782,7 @@ class CellmapsImageDownloader(object):
             if self._skip_logging is False:
                 logutils.setup_filelogger(outdir=self._outdir,
                                           handlerprefix='cellmaps_imagedownloader')
-                self._write_task_start_json()
+            self._write_task_start_json()
 
             self._update_provenance_with_description()
             self._update_provenance_with_keywords()
@@ -811,9 +811,8 @@ class CellmapsImageDownloader(object):
             return exitcode
         finally:
             self._end_time = int(time.time())
-            if self._skip_logging is False:
-                # write a task finish file
-                logutils.write_task_finish_json(outdir=self._outdir,
-                                                start_time=self._start_time,
-                                                end_time=self._end_time,
-                                                status=exitcode)
+            # write a task finish file
+            logutils.write_task_finish_json(outdir=self._outdir,
+                                            start_time=self._start_time,
+                                            end_time=self._end_time,
+                                            status=exitcode)
