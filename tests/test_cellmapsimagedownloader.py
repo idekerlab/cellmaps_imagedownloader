@@ -372,6 +372,26 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
                 self.fail('Expected CellMapsImageDownloaderError')
             except CellMapsImageDownloaderError as c:
                 self.assertTrue('Invalid provenance' in str(c))
+            self.assertFalse(os.path.isfile(os.path.join(run_dir, 'output.log')))
+            self.assertFalse(os.path.isfile(os.path.join(run_dir, 'error.log')))
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_run_with_skip_logging_false(self):
+        """ Tests run()"""
+        temp_dir = tempfile.mkdtemp()
+        try:
+            run_dir = os.path.join(temp_dir, 'run')
+            myobj = CellmapsImageDownloader(outdir=run_dir,
+                                            skip_logging=False)
+            try:
+                myobj.run()
+                self.fail('Expected CellMapsImageDownloaderError')
+            except CellMapsImageDownloaderError as c:
+                self.assertTrue('Invalid provenance' in str(c))
+            self.assertTrue(os.path.isfile(os.path.join(run_dir, 'output.log')))
+            self.assertTrue(os.path.isfile(os.path.join(run_dir, 'error.log')))
+
         finally:
             shutil.rmtree(temp_dir)
 
