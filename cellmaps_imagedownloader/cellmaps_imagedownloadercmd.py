@@ -22,6 +22,7 @@ from cellmaps_imagedownloader.proteinatlas import ImageDownloadTupleGenerator
 from cellmaps_imagedownloader.proteinatlas import LinkPrefixImageDownloadTupleGenerator
 from cellmaps_imagedownloader.proteinatlas import CM4AIImageCopyTupleGenerator
 
+
 logger = logging.getLogger(__name__)
 
 
@@ -93,7 +94,7 @@ def _parse_arguments(desc, args):
                              'logging.config.html#logging-config-fileformat '
                              'Setting this overrides -v parameter which uses '
                              ' default logger. (default None)')
-    parser.add_argument('--skip_logging', type=_str2bool, default=True,
+    parser.add_argument('--skip_logging', action='store_true',
                         help='If set, output.log, error.log and '
                              'task_#_start/finish.json '
                              'files will not be created')
@@ -109,15 +110,6 @@ def _parse_arguments(desc, args):
                                  cellmaps_imagedownloader.__version__))
 
     return parser.parse_args(args)
-
-
-def _str2bool(v):
-    if v.lower() in ('yes', 'true', 't', 'y', '1'):
-        return True
-    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
-        return False
-    else:
-        raise argparse.ArgumentTypeError('Boolean value expected.')
 
 
 def main(args):
@@ -161,13 +153,13 @@ Definition of columns:
 
 The downloaded images are stored under the output directory
 specified on the command line in color specific directories
-(red, blue, green, yellow) with name format of:
-<NAME>_color.jpg
+(red, blue, green, yellow) with name format of: 
+<NAME>_color.jpg 
 
 Example: 1_A1_1_blue.jpg
 
-The --unique flag should be given a CSF file containing best or desired antibodies to
-use.
+The --unique flag should be given a CSF file containing best or desired antibodies to 
+use. 
 
 Format of CSV file:
 
@@ -183,8 +175,8 @@ Definition of columns:
 * locations - Comma delimited list of subcellular locations (string)
 * n_location - Number of subcellular locations (int)
 
-In addition, the --provenance flag is required and must be set to a path
-to a JSON file.
+In addition, the --provenance flag is required and must be set to a path 
+to a JSON file. 
 
 If datasets are already registered with FAIRSCAPE then the following is sufficient:
 
@@ -194,9 +186,9 @@ If datasets are NOT registered, then the following is required:
 
 {register}
 
-Additional optional fields for registering datasets include
+Additional optional fields for registering datasets include 
 'url', 'used-by', 'associated-publication', and 'additional-documentation'
-
+    
 
     """.format(version=cellmaps_imagedownloader.__version__,
                withguids=withguids_json,
@@ -247,7 +239,7 @@ Additional optional fields for registering datasets include
             proteinatlas_reader = ProteinAtlasReader(theargs.outdir, proteinatlas=theargs.proteinatlasxml)
             proteinatlas_urlreader = ProteinAtlasImageUrlReader(reader=proteinatlas_reader)
             imageurlgen = ImageDownloadTupleGenerator(reader=proteinatlas_urlreader,
-                                                      samples_list=imagegen.get_samples_list())
+                                                  samples_list=imagegen.get_samples_list())
         return CellmapsImageDownloader(outdir=theargs.outdir,
                                        imagedownloader=dloader,
                                        imgsuffix=theargs.imgsuffix,
