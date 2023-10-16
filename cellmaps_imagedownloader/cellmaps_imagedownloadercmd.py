@@ -95,8 +95,7 @@ def _parse_arguments(desc, args):
                              'Setting this overrides -v parameter which uses '
                              ' default logger. (default None)')
     parser.add_argument('--skip_logging', action='store_true',
-                        help='If set, output.log, error.log and '
-                             'task_#_start/finish.json '
+                        help='If set, output.log, error.log '
                              'files will not be created')
     parser.add_argument('--verbose', '-v', action='count', default=0,
                         help='Increases verbosity of logger to standard '
