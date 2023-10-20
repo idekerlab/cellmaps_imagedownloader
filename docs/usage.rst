@@ -2,9 +2,9 @@
 Usage
 =====
 
-This script facilitates the downloading of immunofluorescent labeled images from the Human Protein Atlas (HPA).
-The tool requires an output directory to write results to and either a TSV file in CM4AI RO-Crate format,
-or CSV file with list of IF images to download and CSV file of unique samples.
+This script facilitates the downloading of ImmunoFluorescent (IF) labeled images from the `Human Protein Atlas`_ (HPA).
+The tool requires an output directory to write results to and either a TSV_ file in CM4AI_ RO-Crate_ format,
+or CSV_ file with list of IF images to download and CSV_ file of unique samples.
 
 In a project
 --------------
@@ -71,8 +71,8 @@ then unpack the tar gz (tar -xzvf filename.tar.gz).
 
 Alternatively, use the files in the example directory in the repository:
 
-1) samples file: CSV file with list of IF images to download (see sample samples file in examples folder)
-2) unique file: CSV file of unique samples (see sample unique file in examples folder)
+1) samples file: CSV_ file with list of IF images to download (see sample samples file in examples folder)
+2) unique file: CSV_ file of unique samples (see sample unique file in examples folder)
 3) provenance: file containing provenance information about input files in JSON format (see sample provenance file in examples folder)
 
 .. code-block::
@@ -88,4 +88,11 @@ Via Docker
 .. code-block::
 
    Coming soon...
+
+.. _RO-Crate: https://www.researchobject.org/ro-crate
+.. _CSV: https://en.wikipedia.org/wiki/Comma-separated_values
+.. _TSV: https://en.wikipedia.org/wiki/Tab-separated_values
+.. _Human Protein Atlas: https://www.proteinatlas.org
+.. _CM4AI: https://cm4ai.org
+
 
