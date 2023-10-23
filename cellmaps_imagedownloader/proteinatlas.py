@@ -34,7 +34,8 @@ class ProteinAtlasReader(object):
         self._outdir = outdir
         if proteinatlas is None:
             self._proteinatlas = ProteinAtlasReader.DEFAULT_PROTEINATLAS_URL
-        self._proteinatlas = proteinatlas
+        else:
+            self._proteinatlas = proteinatlas
 
     def readline(self):
         """
@@ -57,9 +58,6 @@ class ProteinAtlasReader(object):
         :return: next line of file
         :rtype: str
         """
-        if proteinatlas is None:
-            raise CellMapsImageDownloaderError('proteinatlas is None')
-
         if os.path.isfile(proteinatlas):
             if proteinatlas.endswith('.gz'):
                 with gzip.open(proteinatlas, mode='rt') as f:

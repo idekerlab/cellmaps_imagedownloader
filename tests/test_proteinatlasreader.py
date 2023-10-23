@@ -90,6 +90,28 @@ class TestProteinAtlasReader(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_readline_with_gzip_url_none_for_proteinatlas(self):
+        temp_dir = tempfile.mkdtemp()
+        try:
+            proteinatlas_file = os.path.join(temp_dir, 'source.xml.gz')
+            with gzip.open(proteinatlas_file, 'wt') as f:
+                f.write('line1\n')
+                f.write('line2\n')
+                f.write('line3\n')
+
+            with requests_mock.Mocker() as m:
+                with open(proteinatlas_file, 'rb') as gzfile:
+                    p_url = ProteinAtlasReader.DEFAULT_PROTEINATLAS_URL
+                    m.get(p_url, body=gzfile)
+                    reader = ProteinAtlasReader(outdir=temp_dir)
+                    res = set([a for a in reader.readline()])
+                    self.assertEqual(3, len(res))
+                    self.assertTrue('line1\n' in res)
+                    self.assertTrue('line2\n' in res)
+                    self.assertTrue('line3\n' in res)
+        finally:
+            shutil.rmtree(temp_dir)
+
     """
     # @unittest.skipUnless(os.getenv('CELLMAPS_IMAGEDOWNLOADER_INTEGRATION_TEST') is not None, SKIP_REASON)
     def test_real_download_of_url(self):
