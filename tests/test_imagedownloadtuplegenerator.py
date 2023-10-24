@@ -88,6 +88,11 @@ class TestImageDownloadTupleGenerator(unittest.TestCase):
                          '/green/1843_B2_17_green.jpg') in res),
         self.assertTrue(('http://images.proteinatlas.org/4109/1843_B2_17_cr5af971a263864_yellow.jpg',
                          '/yellow/1843_B2_17_yellow.jpg') in res)
+        self.assertEqual(2, len(reader.get_sample_urlmap()))
+        self.assertTrue('4109/1832_C1_2_' in list(reader.get_sample_urlmap().keys()),
+                        list(reader.get_sample_urlmap().keys()))
+        self.assertTrue('4109/1843_B2_17_' in list(reader.get_sample_urlmap().keys()),
+                        list(reader.get_sample_urlmap().keys()))
 
         
 
