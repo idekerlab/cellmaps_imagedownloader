@@ -61,8 +61,8 @@ For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
 
 **Example usage**
 
-The example file can be downloaded from `cm4ai.org <https://cm4ai.org>`. Go to Products -> Data, log in, and download file for IF images with the desired treatment,
-then unpack the tar gz (tar -xzvf filename.tar.gz).
+The example file can be downloaded from `cm4ai.org <https://cm4ai.org>`__. Go to **Products -> Data**, log in, and download file for IF images with the desired treatment,
+then unpack the tar.gz (``tar -xzvf filename.tar.gz``).
 
 .. code-block::
 
