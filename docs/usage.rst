@@ -49,7 +49,7 @@ For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
 *Optional*
 
 - ``--proteinatlasxml``: URL or path to ``proteinatlas.xml`` or ``proteinatlas.xml.gz`` file.
-- ``--fake_images``: If set, the first image of each color is downloaded, and subsequent images are copies of those images.
+- ``--fake_images``: If set, the first image of each color is downloaded, and subsequent images are copies of those images. If ``--cm4ai_table`` flag is set, the ``--fake_images`` flag is ignored.
 - ``--poolsize``: If using multiprocessing image downloader, this sets the number of current downloads to run.
 - ``--imgsuffix``: Suffix for images to download (default is ``.jpg``).
 - ``--skip_existing``: If set, skips download if the image already exists and has a size greater than 0 bytes.
