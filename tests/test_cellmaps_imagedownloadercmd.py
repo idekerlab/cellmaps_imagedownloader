@@ -26,7 +26,7 @@ class TestCellmapsDownloader(unittest.TestCase):
         res = cellmaps_imagedownloadercmd._parse_arguments('hi',
                                                            ['foo'])
 
-        self.assertEqual(res.verbose, 0)
+        self.assertEqual(res.verbose, 1)
         self.assertEqual(res.logconf, None)
 
         someargs = ['foo', '-vv', '--logconf',
@@ -34,7 +34,7 @@ class TestCellmapsDownloader(unittest.TestCase):
         res = cellmaps_imagedownloadercmd._parse_arguments('hi',
                                                            someargs)
 
-        self.assertEqual(res.verbose, 2)
+        self.assertEqual(res.verbose, 3)
         self.assertEqual(res.outdir, 'foo')
         self.assertEqual(res.logconf, 'hi')
 

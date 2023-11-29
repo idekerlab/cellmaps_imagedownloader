@@ -97,12 +97,12 @@ def _parse_arguments(desc, args):
     parser.add_argument('--skip_logging', action='store_true',
                         help='If set, output.log, error.log '
                              'files will not be created')
-    parser.add_argument('--verbose', '-v', action='count', default=0,
+    parser.add_argument('--verbose', '-v', action='count', default=1,
                         help='Increases verbosity of logger to standard '
                              'error for log messages in this module. Messages are '
                              'output at these python logging levels '
-                             '-v = ERROR, -vv = WARNING, -vvv = INFO, '
-                             '-vvvv = DEBUG, -vvvvv = NOTSET (default no '
+                             '-v = WARNING, -vv = INFO, '
+                             '-vvv = DEBUG, -vvvv = NOTSET (default ERROR '
                              'logging)')
     parser.add_argument('--version', action='version',
                         version=('%(prog)s ' +
@@ -152,13 +152,13 @@ Definition of columns:
 
 The downloaded images are stored under the output directory
 specified on the command line in color specific directories
-(red, blue, green, yellow) with name format of: 
-<NAME>_color.jpg 
+(red, blue, green, yellow) with name format of:
+<NAME>_color.jpg
 
 Example: 1_A1_1_blue.jpg
 
-The --unique flag should be given a CSF file containing best or desired antibodies to 
-use. 
+The --unique flag should be given a CSF file containing best or desired antibodies to
+use.
 
 Format of CSV file:
 
@@ -174,8 +174,8 @@ Definition of columns:
 * locations - Comma delimited list of subcellular locations (string)
 * n_location - Number of subcellular locations (int)
 
-In addition, the --provenance flag is required and must be set to a path 
-to a JSON file. 
+In addition, the --provenance flag is required and must be set to a path
+to a JSON file.
 
 If datasets are already registered with FAIRSCAPE then the following is sufficient:
 
@@ -185,9 +185,9 @@ If datasets are NOT registered, then the following is required:
 
 {register}
 
-Additional optional fields for registering datasets include 
+Additional optional fields for registering datasets include
 'url', 'used-by', 'associated-publication', and 'additional-documentation'
-    
+
 
     """.format(version=cellmaps_imagedownloader.__version__,
                withguids=withguids_json,
