@@ -94,7 +94,7 @@ class ImageDownloader(object):
                               full URL of image to download and 2nd
                               element is destination path
         :type download_list: list
-        :return: 
+        :return:
         """
         raise CellMapsImageDownloaderError('Subclasses should implement this')
 
@@ -746,7 +746,7 @@ class CellmapsImageDownloader(object):
                 for e in errors:
                     f.write(str(e) + '\n')
 
-    def _add_imageurl_to_gene_node_attrs(self, gene_node_attrs=None):
+    def _add_imageurl_to_gene_node_attrs(self, gene_node_attrs=None, first_fold_filenames=None):
         """
         Adds imageurl to **gene_node_attrs** passed in
 
@@ -761,6 +761,15 @@ class CellmapsImageDownloader(object):
             if image_id in sample_urlmap:
                 if sample_urlmap[image_id].startswith('http'):
                     gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = sample_urlmap[image_id]
+                elif first_fold_filenames is not None and key in first_fold_filenames:
+                    first_fold_image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' + first_fold_filenames[
+                        key]
+                    if first_fold_image_id in sample_urlmap and sample_urlmap[first_fold_image_id].startswith('http'):
+                        gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = sample_urlmap[
+                            first_fold_image_id]
+                        gene_node_attrs[key]['filename'] = first_fold_filenames[key]
+                    else:
+                        gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = 'no image url found'
                 else:
                     gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = 'no image url found'
             else:
@@ -795,10 +804,15 @@ class CellmapsImageDownloader(object):
             exitcode, failed_downloads = self._download_images()
             # todo need to validate downloaded image data
 
+            first_fold_filenames = {}
             # write image attribute data
             for fold in [1, 2]:
                 image_gene_node_attrs, errors = self._imagegen.get_gene_node_attributes(fold)
-                self._add_imageurl_to_gene_node_attrs(gene_node_attrs=image_gene_node_attrs)
+                if fold == 1:
+                    for key, value in image_gene_node_attrs.items():
+                        first_fold_filenames[key] = value['filename']
+                self._add_imageurl_to_gene_node_attrs(gene_node_attrs=image_gene_node_attrs,
+                                                      first_fold_filenames=first_fold_filenames if fold == 2 else None)
                 # write image attribute data
                 self._write_image_gene_node_attrs(image_gene_node_attrs, fold, errors)
 
