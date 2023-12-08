@@ -219,7 +219,11 @@ Additional optional fields for registering datasets include
             dloader = CM4AICopyDownloader()
         else:
             samples_list = ImageGeneNodeAttributeGenerator.get_samples_from_csvfile(theargs.samples)
-            unique_list = ImageGeneNodeAttributeGenerator.get_unique_list_from_csvfile(theargs.unique)
+            unique_list = None
+            if theargs.unique is not None:
+                logger.debug('Found --unique file passed in. loading')
+                unique_list = ImageGeneNodeAttributeGenerator.get_unique_list_from_csvfile(theargs.unique)
+
             if theargs.fake_images is True:
                 warnings.warn('FAKE IMAGES ARE BEING DOWNLOADED!!!!!')
                 dloader = FakeImageDownloader()
