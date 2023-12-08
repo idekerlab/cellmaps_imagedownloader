@@ -107,7 +107,7 @@ class CM4AITableConverter(object):
         :return: (samples list, unique list)
         :rtype: tuple
         """
-        if os.path.isfile(self._cm4ai):
+        if self._cm4ai is not None and os.path.isfile(self._cm4ai):
             # assume we have a table file
             samples_df = self._get_samples_from_cm4ai_table_as_dataframe(self._cm4ai)
             unique_df = self._get_unique_dataframe_from_samples_dataframe(samples_df=samples_df)
