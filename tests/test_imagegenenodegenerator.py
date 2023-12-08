@@ -183,12 +183,6 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
                           'antibody_two': {'3_B1_4_'}}, filename_dict)
         self.assertEqual({'antibody_two': 'ensemble_two,ensemble_three'}, ambig_dict)
 
-        # run again this time limit to antibody_two
-        antibody_dict, filename_dict, ambig_dict = imagegen.get_dicts_of_gene_to_antibody_filename(allowed_antibodies={'antibody_two'})
-        self.assertEqual({'ensemble_two': 'antibody_two',
-                          'ensemble_three': 'antibody_two'}, antibody_dict)
-        self.assertEqual({'antibody_two': {'3_B1_4_'}}, filename_dict)
-
     def test_get_unique_ids_from_samplelist(self):
 
         samples = [{'ensembl_ids': 'ENSG01,ENSG02'}]

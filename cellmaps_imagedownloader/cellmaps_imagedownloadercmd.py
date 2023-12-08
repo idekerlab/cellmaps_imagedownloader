@@ -21,6 +21,7 @@ from cellmaps_imagedownloader.proteinatlas import ProteinAtlasImageUrlReader
 from cellmaps_imagedownloader.proteinatlas import ImageDownloadTupleGenerator
 from cellmaps_imagedownloader.proteinatlas import LinkPrefixImageDownloadTupleGenerator
 from cellmaps_imagedownloader.proteinatlas import CM4AIImageCopyTupleGenerator
+from cellmaps_imagedownloader.proteinatlas import ProteinAtlasImageIdToURLMapper
 
 
 logger = logging.getLogger(__name__)
@@ -237,8 +238,10 @@ Additional optional fields for registering datasets include
         else:
             proteinatlas_reader = ProteinAtlasReader(theargs.outdir, proteinatlas=theargs.proteinatlasxml)
             proteinatlas_urlreader = ProteinAtlasImageUrlReader(reader=proteinatlas_reader)
-            imageurlgen = ImageDownloadTupleGenerator(reader=proteinatlas_urlreader,
-                                                  samples_list=imagegen.get_samples_list())
+            mapper = ProteinAtlasImageIdToURLMapper(reader=proteinatlas_urlreader,
+                                                    valid_image_ids=imagegen.get_samples_list_image_ids())
+            imageurlgen = ImageDownloadTupleGenerator(mapper=mapper,
+                                                      samples_list=imagegen.get_samples_list())
         return CellmapsImageDownloader(outdir=theargs.outdir,
                                        imagedownloader=dloader,
                                        imgsuffix=theargs.imgsuffix,

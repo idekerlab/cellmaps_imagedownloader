@@ -22,16 +22,10 @@ class TestImageDownloadTupleGenerator(unittest.TestCase):
         """Tear down test fixtures, if any."""
 
     def test_get_image_prefix_suffix(self):
-        mockreader = MagicMock()
-        mockreader.get_next_image_id_and_url = MagicMock()
+        mockmapper = MagicMock()
+        mockmapper.get_image_id_to_url_map = MagicMock(return_value={'': ''})
 
-        def fake_generator():
-            lines = [('','')]
-            yield from lines
-
-        mockreader.get_next_image_id_and_url.side_effect = fake_generator
-
-        reader = ImageDownloadTupleGenerator(reader=mockreader)
+        reader = ImageDownloadTupleGenerator(mapper=mockmapper)
         self.assertEqual(('http://images.proteinatlas.org/4109/1832_C1_2_', '.jpg'),
                          reader._get_image_prefix_suffix('http://images.pro'
                                                          'teinatlas.org/4109'
@@ -54,20 +48,12 @@ class TestImageDownloadTupleGenerator(unittest.TestCase):
                     'if_plate_id': '1',
                     'position': 'A1',
                     'sample': '1'}]
-        mockreader = MagicMock()
-        mockreader.get_next_image_id_and_url = MagicMock()
+        mockmapper = MagicMock()
+        mockmapper.get_image_id_to_url_map = MagicMock(return_value={'4109/1832_C1_2_': 'http://images.proteinatlas.org/4109/1832_C1_2_blue_red_green.jpg',
+                                                                     '4109/1843_B2_17_': 'http://images.proteinatlas.org/4109/1843_B2_17_cr5af971a263864_blue_red_green.jpg'})
 
-        def fake_generator():
-            lines = [('4109/1832_C1_2_',
-                      'http://images.proteinatlas.org/4109/1832_C1_2_blue_red_green.jpg'),
-                     ('4109/1843_B2_17_',
-                     'http://images.proteinatlas.org/4109/1843_B2_17_cr5af971a263864_blue_red_green.jpg')]
-
-            yield from lines
-
-        mockreader.get_next_image_id_and_url.side_effect = fake_generator
         reader = ImageDownloadTupleGenerator(samples_list=samples,
-                                             reader=mockreader)
+                                             mapper=mockmapper)
         c_d_map = {'red': '/red', 'blue': '/blue',
                    'green': '/green', 'yellow': '/yellow'}
         res = [a for a in reader.get_next_image_url(color_download_map=c_d_map)]

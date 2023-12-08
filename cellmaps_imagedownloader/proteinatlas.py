@@ -125,9 +125,27 @@ class ProteinAtlasImageUrlReader(object):
 
     def _get_image_id(self, image_url):
         """
+        Gets `image id` from **image_url** where `image id` is basically
+        ``<ANTIBODY_ID>/<IMAGE_ID>_`` and the **image_url** is expected to
+        be a URL in this format: ``http://xxxx/<ANTIBODY_ID>/<IMAGE_ID>_blue_red_green.jpg``
+        or ``http://xxxx/<ANTIBODY_ID>/<IMAGE_ID>_YYYY_blue_red_green.jpg`` where ``xxxx``
+        is url of site usually ``images.proteinatlas.org`` and if set ``YYYY`` is
+        something like ``cr5asdjd3983``
+
+        **Example 1:
+
+        ``http://images.proteinatlas.org/4109/1832_C1_2_blue_red_green.jpg`` will
+        return as ``4109/1832_C2_``
+
+        **Example 2:
+
+        ``http://images.proteinatlas.org/4109/1843_B2_17_cr5af971a263864_blue_red_green.jpg``
+        will return as ``4109/1843_B2_17_``
 
         :param image_url:
-        :return:
+        :type image_url: str
+        :return: id of image
+        :rtype: str
         """
         antibody_and_id = '/'.join(image_url.split('/')[-2:])
         return '_'.join(antibody_and_id.split('_')[0:3]) + '_'
@@ -148,18 +166,48 @@ class ProteinAtlasImageUrlReader(object):
             yield self._get_image_id(image_url), image_url
 
 
+class ProteinAtlasImageIdToURLMapper(object):
+    """
+    Given a :py:class:`ProteinAtlasImageUrlReader` instances
+    of this class create a dict of image id to image URL
+    keeping only entries with image ids set in constructor
+    """
+    def __init__(self, reader=None,
+                 valid_image_ids=None):
+        """
+        Constructor
+
+        :param reader:
+        :param valid_image_ids:
+        """
+        self._reader = reader
+        self._valid_image_ids = valid_image_ids
+
+    def get_image_id_to_url_map(self):
+        """
+
+        :return:
+        """
+        id_url_map = {}
+        for image_id, image_url in self._reader.get_next_image_id_and_url():
+            if self._valid_image_ids is not None and image_id not in self._valid_image_ids:
+                continue
+            id_url_map[image_id] = image_url
+        return id_url_map
+
+
 class ImageDownloadTupleGenerator(object):
     """
     Gets URL to download images for given samples
     """
     def __init__(self, samples_list=None,
-                 reader=None):
+                 mapper=None):
         """
 
         :param samples_list:
         """
         self._samples_list = samples_list
-        self._reader = reader
+        self._mapper = mapper
         self._sample_urlmap = None
 
     def _populate_sample_urlmap(self):
@@ -169,11 +217,7 @@ class ImageDownloadTupleGenerator(object):
 
         :return:
         """
-        self._sample_urlmap = {}
-        for image_id, image_url in self._reader.get_next_image_id_and_url():
-            self._sample_urlmap[image_id] = image_url
-
-        logger.debug(self._sample_urlmap)
+        self._sample_urlmap = self._mapper.get_image_id_to_url_map()
 
     def get_sample_urlmap(self):
         """
@@ -192,6 +236,7 @@ class ImageDownloadTupleGenerator(object):
     def _get_image_prefix_suffix(self, image_url):
         """
         Extracts URL prefix and filename suffix from **image_url**
+
         :param image_url:
         :type image_url: str
         :return: (image url prefix, suffix ie .jpg)
@@ -217,7 +262,9 @@ class ImageDownloadTupleGenerator(object):
                        '_' + sample['position'] +\
                        '_' + sample['sample'] + '_'
             if image_id not in self._sample_urlmap:
-                logger.error(image_id + ' not in sample map')
+                logger.error(image_id + ' not in sample map which means '
+                                        'no URL was found to acquire '
+                                        'said image')
                 continue
 
             image_filename = sample['if_plate_id'] +\
