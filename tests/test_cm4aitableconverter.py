@@ -93,6 +93,10 @@ class TestCM4AITableConverter(unittest.TestCase):
         finally:
             shutil.rmtree(temp_dir)
 
+    def test_get_samples_and_unique_lists_unset_in_constructor(self):
+        converter = CM4AITableConverter()
+        self.assertEqual((None, None), converter.get_samples_and_unique_lists())
+
     def test_get_samples_and_unique_lists(self):
         temp_dir = tempfile.mkdtemp()
         try:
