@@ -238,7 +238,8 @@ Additional optional fields for registering datasets include
             proteinatlas_reader = ProteinAtlasReader(theargs.outdir, proteinatlas=theargs.proteinatlasxml)
             proteinatlas_urlreader = ProteinAtlasImageUrlReader(reader=proteinatlas_reader)
             imageurlgen = ImageDownloadTupleGenerator(reader=proteinatlas_urlreader,
-                                                  samples_list=imagegen.get_samples_list())
+                                                      samples_list=imagegen.get_samples_list(),
+                                                      valid_image_ids=imagegen.get_samples_list_image_ids())
         return CellmapsImageDownloader(outdir=theargs.outdir,
                                        imagedownloader=dloader,
                                        imgsuffix=theargs.imgsuffix,

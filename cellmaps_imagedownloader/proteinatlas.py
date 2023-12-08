@@ -153,7 +153,8 @@ class ImageDownloadTupleGenerator(object):
     Gets URL to download images for given samples
     """
     def __init__(self, samples_list=None,
-                 reader=None):
+                 reader=None,
+                 valid_image_ids=None):
         """
 
         :param samples_list:
@@ -161,6 +162,7 @@ class ImageDownloadTupleGenerator(object):
         self._samples_list = samples_list
         self._reader = reader
         self._sample_urlmap = None
+        self._valid_image_ids = valid_image_ids
 
     def _populate_sample_urlmap(self):
         """
@@ -171,9 +173,9 @@ class ImageDownloadTupleGenerator(object):
         """
         self._sample_urlmap = {}
         for image_id, image_url in self._reader.get_next_image_id_and_url():
+            if self._valid_image_ids is not None and image_id not in self._valid_image_ids:
+                continue
             self._sample_urlmap[image_id] = image_url
-
-        logger.debug(self._sample_urlmap)
 
     def get_sample_urlmap(self):
         """
@@ -187,11 +189,14 @@ class ImageDownloadTupleGenerator(object):
         :return: map or ``None``
         :rtype: dict
         """
+        if self._sample_urlmap is None:
+            self._populate_sample_urlmap()
         return self._sample_urlmap
 
     def _get_image_prefix_suffix(self, image_url):
         """
         Extracts URL prefix and filename suffix from **image_url**
+
         :param image_url:
         :type image_url: str
         :return: (image url prefix, suffix ie .jpg)
@@ -209,7 +214,8 @@ class ImageDownloadTupleGenerator(object):
         :return: list of tuples (image download URL, destination file path)
         :rtype: list
         """
-        self._populate_sample_urlmap()
+        if self._sample_urlmap is None:
+            self._populate_sample_urlmap()
 
         for sample in self._samples_list:
             image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' +\
@@ -217,7 +223,9 @@ class ImageDownloadTupleGenerator(object):
                        '_' + sample['position'] +\
                        '_' + sample['sample'] + '_'
             if image_id not in self._sample_urlmap:
-                logger.error(image_id + ' not in sample map')
+                logger.error(image_id + ' not in sample map which means '
+                                        'no URL was found to acquire '
+                                        'said image')
                 continue
 
             image_filename = sample['if_plate_id'] +\
@@ -265,14 +273,11 @@ class LinkPrefixImageDownloadTupleGenerator(object):
         """
         Gets map of ANTIBODY/PLATE_ID_POSITION_SAMPLE_ => download url of _blue_red_green.jpg
 
-
-        .. note::
-
-            This only returns a map if get_next_image_url() has already been called
-
         :return: map or ``None``
         :rtype: dict
         """
+        if self._sample_urlmap is None:
+            self._populate_sample_urlmap()
         return self._sample_urlmap
 
     def _get_image_prefix_suffix(self, image_url):
@@ -295,7 +300,8 @@ class LinkPrefixImageDownloadTupleGenerator(object):
         :return: list of tuples (image download URL, destination file path)
         :rtype: list
         """
-        self._populate_sample_urlmap()
+        if self._sample_urlmap is None:
+            self._populate_sample_urlmap()
 
         for sample in self._samples_list:
             image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' +\
@@ -352,14 +358,11 @@ class CM4AIImageCopyTupleGenerator(object):
         """
         Gets map of ANTIBODY/PLATE_ID_POSITION_SAMPLE_ => download url of _blue_red_green.jpg
 
-
-        .. note::
-
-            This only returns a map if get_next_image_url() has already been called
-
         :return: map or ``None``
         :rtype: dict
         """
+        if self._sample_urlmap is None:
+            self._populate_sample_urlmap()
         return self._sample_urlmap
 
     def _get_image_prefix_suffix(self, image_url):
@@ -382,7 +385,8 @@ class CM4AIImageCopyTupleGenerator(object):
         :return: list of tuples (image download URL, destination file path)
         :rtype: list
         """
-        self._populate_sample_urlmap()
+        if self._sample_urlmap is None:
+            self._populate_sample_urlmap()
 
         for sample in self._samples_list:
             image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' +\

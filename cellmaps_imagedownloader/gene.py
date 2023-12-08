@@ -286,15 +286,78 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         self._unique_list = unique_list
         self._genequery = genequery
 
+    def _filter_samples_by_unique_list(self):
+        """
+        Filters samples by removing entries that do not
+        have a matching antibody in the unique list passed
+        in via the constructor
+        :return:
+        """
+        if self._unique_list is None:
+            logger.debug('No unique list to filter with, skipping filter')
+            return
+        if self._samples_list is None:
+            logger.debug('Samples list is None, skipping filter')
+            return
+        unique_antibodies = self._get_set_of_antibodies_from_unique_list()
+
+        entries_to_remove = []
+        for entry in self._samples_list:
+            if entry['antibody'] not in unique_antibodies:
+                entries_to_remove.append(entry)
+                continue
+        logger.debug('Removing ' + str(len(entries_to_remove)) + ' entries')
+        for entry in entries_to_remove:
+            self._samples_list.remove(entry)
+
+    def filter_samples_by_sample_urlmap(self, sample_url_map=None):
+        """
+        Removes samples that lack a URL as noted in **sample_url_map** passed
+        in
+        :param sample_url_map:
+        :type sample_url_map: dict
+        """
+        entries_to_remove = []
+        for entry in self._samples_list:
+            image_id = ImageGeneNodeAttributeGenerator.get_image_id_for_sample(entry)
+            if image_id not in sample_url_map:
+                entries_to_remove.append(entry)
+
+        logger.debug('Removing ' + str(len(entries_to_remove)) + ' entries')
+        for entry in entries_to_remove:
+            self._samples_list.remove(entry)
+
     def get_samples_list(self):
         """
         Gets **samples_list** passed in via the constructor
-
+        that has been filtered by **unique_list** passed in via
+        the constructor
 
         :return: list of samples set via constructor
         :rtype: list
         """
         return self._samples_list
+
+    def get_samples_list_image_ids(self):
+        """
+        :return:
+        """
+        image_id_list = []
+        for sample in self._samples_list:
+            image_id_list.append(ImageGeneNodeAttributeGenerator.get_image_id_for_sample(sample))
+        return image_id_list
+
+
+    @staticmethod
+    def get_image_id_for_sample(sample):
+        """
+        :param sample:
+        :return:
+        """
+        return re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' + \
+                      sample['if_plate_id'] + \
+                      '_' + sample['position'] + \
+                      '_' + sample['sample'] + '_'
 
     @staticmethod
     def get_samples_from_csvfile(csvfile=None):
@@ -442,15 +505,11 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
             antibody_set.add(a['antibody'])
         return antibody_set
 
-    def get_dicts_of_gene_to_antibody_filename(self, allowed_antibodies=None):
+    def get_dicts_of_gene_to_antibody_filename(self):
         """
         Gets a tuple of dictionaries from the sample list passed in via
         the constructor.
 
-
-        :param allowed_antibodies: Skip samples whose antibody is NOT in this list.
-                                   If ``None`` then all samples are included
-        :type allowed_antibodies: list or set
         :return: (:py:class:`dict` of ensembl_id => antibody,
                   :py:class:`dict` of antibody => filename,
                   :py:class:`dict` of antibody => comma delimited ambiguous ensembl_ids)
@@ -466,9 +525,6 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
 
         for sample in self._samples_list:
             antibody = sample['antibody']
-            if allowed_antibodies is not None and antibody not in allowed_antibodies:
-                # skipping cause antibody is not in allowed set
-                continue
 
             if str(sample['ensembl_ids']) == 'nan':
                 # skipping because these are most likely negative control entries
@@ -522,7 +578,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         """
         # Todo: Refactor because this method is doing waaay too much
 
-        t = tqdm(total=5, desc='Get updated gene symbols',
+        t = tqdm(total=4, desc='Get updated gene symbols',
                  unit='steps')
 
         t.update()
@@ -541,16 +597,9 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         query_res = self._genequery.get_symbols_for_genes(genelist=ensembl_id_list,
                                                           scopes='ensembl.gene')
 
-        t.update()
-
-        # get the unique or best antibodies to use
-        unique_antibodies = self._get_set_of_antibodies_from_unique_list()
-
-        t.update()
         # create a mapping of ensembl id to antibody and ensembl_id to filenames
-        # where entries NOT in unique_antibodies are filtered out
         # get mapping of ambiguous genes
-        g_antibody_dict, antibody_filename_dict, ambiguous_antibody_dict = self.get_dicts_of_gene_to_antibody_filename(allowed_antibodies=unique_antibodies)
+        g_antibody_dict, antibody_filename_dict, ambiguous_antibody_dict = self.get_dicts_of_gene_to_antibody_filename()
 
         errors = []
         gene_node_attrs = {}

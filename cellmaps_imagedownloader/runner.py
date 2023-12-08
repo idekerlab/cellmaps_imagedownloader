@@ -795,6 +795,10 @@ class CellmapsImageDownloader(object):
             exitcode, failed_downloads = self._download_images()
             # todo need to validate downloaded image data
 
+            # Remove entries from samples that lack a download URL
+            # TODO Need to verify this works with cm4ai data coming in
+            self._imagegen.filter_samples_by_sample_urlmap(sample_url_map=self._imageurlgen.get_sample_urlmap())
+
             # write image attribute data
             for fold in [1, 2]:
                 image_gene_node_attrs, errors = self._imagegen.get_gene_node_attributes(fold)
