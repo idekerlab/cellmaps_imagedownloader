@@ -796,7 +796,7 @@ class CellmapsImageDownloader(object):
             # todo need to validate downloaded image data
 
             # Remove entries from samples that lack a download URL
-            self._imagegen.filter_samples_by_sample_urlmap(sample_url_map=self._imageurlgen.get_sample_urlmap())
+            self._imagegen.filter_samples_by_sample_urlmap(self._imageurlgen.get_sample_urlmap())
 
             # write image attribute data
             for fold in [1, 2]:

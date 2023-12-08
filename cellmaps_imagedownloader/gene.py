@@ -295,7 +295,6 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         Filters samples by removing entries that do not
         have a matching antibody in the unique list passed
         in via the constructor
-        :return:
         """
         if self._unique_list is None:
             logger.debug('No unique list to filter with, skipping filter')
@@ -314,13 +313,21 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         for entry in entries_to_remove:
             self._samples_list.remove(entry)
 
-    def filter_samples_by_sample_urlmap(self, sample_url_map=None):
+    def filter_samples_by_sample_urlmap(self, sample_url_map):
         """
         Removes samples that lack a URL as noted in **sample_url_map** passed
-        in
-        :param sample_url_map:
+        in.
+
+        :raises CellMapsImageDownloaderError: if internal samples list is ``None``
+        :param sample_url_map: map where key is image id and value is URL
         :type sample_url_map: dict
         """
+        if self._samples_list is None:
+            raise CellMapsImageDownloaderError('samples list is None')
+
+        if sample_url_map is None:
+            logger.info('sample_url_map is None, no filtering performed')
+            return
         entries_to_remove = []
         for entry in self._samples_list:
             image_id = ImageGeneNodeAttributeGenerator.get_image_id_for_sample(entry)
@@ -344,24 +351,49 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
 
     def get_samples_list_image_ids(self):
         """
-        :return:
+        Gets a list of image ids from the samples set via
+        constructor
+
+        :raises CellMapsImageDownloaderError: if samples list in constructor is ``None``
+                                              or if there was an issue parsing a sample
+        :return: image ids
+        :rtype: list
         """
         image_id_list = []
+        if self._samples_list is None:
+            raise CellMapsImageDownloaderError('samples list is None')
         for sample in self._samples_list:
             image_id_list.append(ImageGeneNodeAttributeGenerator.get_image_id_for_sample(sample))
         return image_id_list
 
-
     @staticmethod
     def get_image_id_for_sample(sample):
         """
-        :param sample:
-        :return:
+        Gets image id for **sample** passed in
+
+        :param sample: Assumed to be a dict of following format:
+                       ``{'antibody': 'HPA0####',
+                          'position': 'XXX',
+                          'sample': 'XXX',
+                          'if_plate_id: 'XXX'}``
+        :type sample: dict
+        :raises CellMapsImageDownloaderError: If **sample** is ``None``, not a dict
+                                              or is missing any of these keys
+                                              ``antibody, position, sample, if_plate_id``
+        :return: ``<ANTIBODY WITH HPA0*|CAB0* REMOVED>/<IF_PLATE_ID>_<POSITION>_<SAMPLE>_``
+        :rtype: str
         """
-        return re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' + \
-                      sample['if_plate_id'] + \
-                      '_' + sample['position'] + \
-                      '_' + sample['sample'] + '_'
+        if sample is None:
+            raise CellMapsImageDownloaderError('sample is None')
+        if not isinstance(sample, dict):
+            raise CellMapsImageDownloaderError('sample is not a dict')
+        for keyword in ['antibody', 'position', 'sample', 'if_plate_id']:
+            if keyword not in sample:
+                raise CellMapsImageDownloaderError(keyword + ' not in sample')
+        return re.sub('^HPA0*|^CAB0*', '', str(sample['antibody'])) + '/' + \
+                      str(sample['if_plate_id']) + \
+                      '_' + str(sample['position']) + \
+                      '_' + str(sample['sample']) + '_'
 
     @staticmethod
     def get_samples_from_csvfile(csvfile=None):

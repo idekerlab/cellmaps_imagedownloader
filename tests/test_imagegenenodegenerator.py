@@ -29,6 +29,112 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
         gen = ImageGeneNodeAttributeGenerator(unique_list='foo')
         self.assertEqual('foo', gen.get_unique_list())
 
+    def test_filter_samples_by_unique_list_unique_list_is_none(self):
+        gen = ImageGeneNodeAttributeGenerator(samples_list=[])
+        gen._filter_samples_by_unique_list()
+
+    def test_filter_samples_by_unique_list_samples_list_is_none(self):
+        gen = ImageGeneNodeAttributeGenerator(unique_list=[])
+        gen._filter_samples_by_unique_list()
+
+    def test_filter_samples_by_unique_list(self):
+        gen = ImageGeneNodeAttributeGenerator(samples_list=[{'antibody': 'xxx'},
+                                                            {'antibody': 'HPA123'}],
+                                              unique_list=[{'no_antibody': 1},
+                                                           {'antibody': 'HPA123'},
+                                                           {'antibody': 'CAB456'}])
+        self.assertEqual(2, len(gen.get_samples_list()))
+        gen._filter_samples_by_unique_list()
+
+        self.assertEqual([{'antibody': 'HPA123'}], gen.get_samples_list())
+
+    def test_get_image_id_for_sample_none(self):
+        try:
+            ImageGeneNodeAttributeGenerator.get_image_id_for_sample(None)
+            self.fail('Expected exception')
+        except CellMapsImageDownloaderError as ce:
+            self.assertEqual('sample is None', str(ce))
+
+    def test_get_image_id_for_sample_not_dict(self):
+        try:
+            ImageGeneNodeAttributeGenerator.get_image_id_for_sample('foo')
+            self.fail('Expected exception')
+        except CellMapsImageDownloaderError as ce:
+            self.assertEqual('sample is not a dict', str(ce))
+
+    def test_get_image_id_for_sample_invalidsample(self):
+        for key_to_del in ['antibody', 'position', 'sample', 'if_plate_id']:
+            sample = {'antibody': 'a',
+                      'position': 'b',
+                      'sample': 'c',
+                      'if_plate_id': 'd'}
+            del sample[key_to_del]
+            try:
+                ImageGeneNodeAttributeGenerator.get_image_id_for_sample(sample)
+                self.fail('Expected exception')
+            except CellMapsImageDownloaderError as ce:
+                self.assertEqual(key_to_del + ' not in sample', str(ce))
+
+    def test_get_image_id_for_sample_valid(self):
+        sample = {'antibody': 'HPA012345',
+                  'position': 2,
+                  'sample': 'C1',
+                  'if_plate_id': 1}
+        res = ImageGeneNodeAttributeGenerator.get_image_id_for_sample(sample)
+        self.assertEqual('12345/1_2_C1_', res)
+
+    def test_get_samples_list_image_ids_samples_list_none(self):
+        gen = ImageGeneNodeAttributeGenerator(samples_list=None)
+        try:
+            gen.get_samples_list_image_ids()
+            self.fail('Expected exception')
+        except CellMapsImageDownloaderError as ce:
+            self.assertEqual('samples list is None', str(ce))
+
+    def test_get_samples_list_image_ids(self):
+        samples = [{'antibody': 'HPA012345',
+                    'position': 2,
+                    'sample': 'C1',
+                    'if_plate_id': 1},
+                   {'antibody': 'CAB000123',
+                    'position': 'A',
+                    'sample': 'A1',
+                    'if_plate_id': '2'}
+                   ]
+        gen = ImageGeneNodeAttributeGenerator(samples_list=samples)
+        res = gen.get_samples_list_image_ids()
+        self.assertEqual(2, len(res))
+        self.assertTrue('12345/1_2_C1_' in res)
+        self.assertTrue('123/2_A_A1_' in res)
+
+    def test_filter_samples_by_sample_urlmap_samples_none(self):
+        gen = ImageGeneNodeAttributeGenerator(samples_list=None)
+        try:
+            gen.filter_samples_by_sample_urlmap(sample_url_map={})
+            self.fail('Expected exception')
+        except CellMapsImageDownloaderError as ce:
+            self.assertEqual('samples list is None', str(ce))
+
+    def test_filter_samples_by_sample_urlmap_sample_url_map_none(self):
+        gen = ImageGeneNodeAttributeGenerator(samples_list=[])
+        gen.filter_samples_by_sample_urlmap(None)
+
+    def test_filter_samples_by_sample_urlmap(self):
+        samples = [{'antibody': 'HPA012345',
+                    'position': 2,
+                    'sample': 'C1',
+                    'if_plate_id': 1},
+                   {'antibody': 'CAB000123',
+                    'position': 'A',
+                    'sample': 'A1',
+                    'if_plate_id': '2'}
+                   ]
+        gen = ImageGeneNodeAttributeGenerator(samples_list=samples)
+        gen.filter_samples_by_sample_urlmap(None)
+        self.assertEqual(samples, gen.get_samples_list())
+        gen.filter_samples_by_sample_urlmap({'12345/1_2_C1_': 'http://foo'})
+        self.assertEqual([samples[0]], gen.get_samples_list())
+
     def test_get_samples_from_csv_file(self):
         try:
             # Test case when csvfile is None
