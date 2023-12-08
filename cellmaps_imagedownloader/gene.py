@@ -78,7 +78,7 @@ class GeneQuery(object):
 
 class CM4AITableConverter(object):
     """
-    Converts CM4AI table in an RO-Crate to
+    Converts `CM4AI <https://cm4ai.org>`__ table in an `RO-Crate <https://www.researchobject.org/ro-crate>`__ to
     samples and unique lists compatible with
     :py:class:`~cellmaps_imagedownloader.gene.ImageGeneNodeAttributeGenerator`
     """
@@ -88,8 +88,11 @@ class CM4AITableConverter(object):
         """
         Constructor
 
-        :param cm4ai: Path to CM4AI RO-Crate, or CM4AI RO-Crate antibody_gene_table or
-                      URL where CM4AI RO-Crate can be downloaded
+        :param cm4ai: Path to `CM4AI <https://cm4ai.org>`__
+                      `RO-Crate <https://www.researchobject.org/ro-crate>`__, or
+                      `CM4AI <https://cm4ai.org>`__ `RO-Crate <https://www.researchobject.org/ro-crate>`__
+                      antibody_gene_table or
+                      URL where `CM4AI <https://cm4ai.org>`__ `RO-Crate <https://www.researchobject.org/ro-crate>`__ can be downloaded
         :type cm4ai: str
         """
         self._cm4ai = cm4ai
@@ -100,6 +103,7 @@ class CM4AITableConverter(object):
         """
         Gets samples and unique list compatible with
         :py:class:`~cellmaps_imagedownloader.gene.ImageGeneNodeAttributeGenerator`
+
         :return: (samples list, unique list)
         :rtype: tuple
         """

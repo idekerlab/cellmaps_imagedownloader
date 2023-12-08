@@ -156,8 +156,15 @@ class ImageDownloadTupleGenerator(object):
                  reader=None,
                  valid_image_ids=None):
         """
+        Constructor
 
         :param samples_list:
+        :type samples_list: list
+        :param reader: Used to get download URLs for images
+        :type reader: :py:class:`~cellmaps_imagedownloader.proteinatlas.ProteinAtlasImageUrlReader`
+        :param valid_image_ids: Image ids that need a download URL in format of
+                                ``<ANTIBODY ID minus HPA or CAB prefix>/<IMAGE ID>``
+        :type valid_image_ids: set
         """
         self._samples_list = samples_list
         self._reader = reader
@@ -168,8 +175,9 @@ class ImageDownloadTupleGenerator(object):
         """
         Iterates over reader and builds a
         map of ANTIBODY/PLATE_ID_POSITION_SAMPLE_ => download url of _blue_red_green.jpg
+        for all images in ``self._valid_image_ids`` list or for everything if that is ``None``
 
-        :return:
+        The map is stored in ``self._sample_urlmap``
         """
         self._sample_urlmap = {}
         for image_id, image_url in self._reader.get_next_image_id_and_url():
@@ -180,11 +188,6 @@ class ImageDownloadTupleGenerator(object):
     def get_sample_urlmap(self):
         """
         Gets map of ANTIBODY/PLATE_ID_POSITION_SAMPLE_ => download url of _blue_red_green.jpg
-
-
-        .. note::
-
-            This only returns a map if get_next_image_url() has already been called
 
         :return: map or ``None``
         :rtype: dict
@@ -197,7 +200,7 @@ class ImageDownloadTupleGenerator(object):
         """
         Extracts URL prefix and filename suffix from **image_url**
 
-        :param image_url:
+        :param image_url: URL to download image
         :type image_url: str
         :return: (image url prefix, suffix ie .jpg)
         :rtype: tuple
@@ -208,6 +211,8 @@ class ImageDownloadTupleGenerator(object):
 
     def get_next_image_url(self, color_download_map=None):
         """
+        `Generator function <https://docs.python.org/3/glossary.html#index-19>`__
+        that gets the next image URL to download
 
         :param color_download_map: dict of colors to location on filesystem
                                    ``{'red': '/tmp/foo/red'}``
