@@ -372,10 +372,14 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         Gets image id for **sample** passed in
 
         :param sample: Assumed to be a dict of following format:
-                       ``{'antibody': 'HPA0####',
-                          'position': 'XXX',
-                          'sample': 'XXX',
-                          'if_plate_id: 'XXX'}``
+
+                       .. code-block::
+
+                          {'antibody': 'HPA0####',
+                           'position': 'XXX',
+                           'sample': 'XXX',
+                           'if_plate_id: 'XXX'}
+
         :type sample: dict
         :raises CellMapsImageDownloaderError: If **sample** is ``None``, not a dict
                                               or is missing any of these keys

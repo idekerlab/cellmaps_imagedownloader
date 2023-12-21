@@ -18,7 +18,7 @@ cellmaps\_imagedownloader.gene module
    :show-inheritance:
 
 cellmaps\_imagedownloader.proteinatlas module
--------------------------------------
+-----------------------------------------------
 
 .. automodule:: cellmaps_imagedownloader.proteinatlas
    :members:

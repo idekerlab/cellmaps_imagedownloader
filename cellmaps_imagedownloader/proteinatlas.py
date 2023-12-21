@@ -187,7 +187,7 @@ class ImageDownloadTupleGenerator(object):
 
     def get_sample_urlmap(self):
         """
-        Gets map of ANTIBODY/PLATE_ID_POSITION_SAMPLE_ => download url of _blue_red_green.jpg
+        Gets map of ``ANTIBODY/PLATE_ID_POSITION_SAMPLE_`` => download url of _blue_red_green.jpg
 
         :return: map or ``None``
         :rtype: dict
@@ -276,7 +276,7 @@ class LinkPrefixImageDownloadTupleGenerator(object):
 
     def get_sample_urlmap(self):
         """
-        Gets map of ANTIBODY/PLATE_ID_POSITION_SAMPLE_ => download url of _blue_red_green.jpg
+        Gets map of ``ANTIBODY/PLATE_ID_POSITION_SAMPLE_`` => download url of _blue_red_green.jpg
 
         :return: map or ``None``
         :rtype: dict
@@ -361,7 +361,7 @@ class CM4AIImageCopyTupleGenerator(object):
 
     def get_sample_urlmap(self):
         """
-        Gets map of ANTIBODY/PLATE_ID_POSITION_SAMPLE_ => download url of _blue_red_green.jpg
+        Gets map of ``ANTIBODY/PLATE_ID_POSITION_SAMPLE_`` => download url of _blue_red_green.jpg
 
         :return: map or ``None``
         :rtype: dict
