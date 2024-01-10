@@ -3,7 +3,10 @@ import os
 import re
 import gzip
 import logging
+import time
+
 import requests
+from requests import RequestException
 
 from tqdm import tqdm
 from cellmaps_utils import constants
@@ -48,13 +51,17 @@ class ProteinAtlasReader(object):
         for line in self._readline(self._proteinatlas):
             yield line
 
-    def _readline(self, proteinatlas):
+    def _readline(self, proteinatlas, max_retries=3, retry_wait=10):
         """
         Generator that returns next line of **proteinatlas**
 
         :param proteinatlas: Path to xml or xml.gz file or URL to download
                              xml or xml.gz file
         :type proteinatlas: str
+        :param max_retries:
+        :type max_retries: int
+        :param retry_wait:
+        :type retry_wait: int
         :return: next line of file
         :rtype: str
         """
@@ -72,27 +79,38 @@ class ProteinAtlasReader(object):
         local_file = os.path.join(self._outdir,
                                   proteinatlas.split('/')[-1])
 
-        with requests.get(proteinatlas,
-                          stream=True) as r:
-            content_size = int(r.headers.get('content-length', 0))
-            tqdm_bar = tqdm(desc='Downloading ' + os.path.basename(local_file),
-                            total=content_size,
-                            unit='B', unit_scale=True,
-                            unit_divisor=1024)
-            logger.debug('Downloading ' + str(proteinatlas) +
-                         ' of size ' + str(content_size) +
-                         'b to ' + local_file)
+        retry_num = 0
+        download_successful = False
+        while retry_num < max_retries and not download_successful:
             try:
-                r.raise_for_status()
-                with open(local_file, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=8192):
-                        f.write(chunk)
-                        tqdm_bar.update(len(chunk))
-            finally:
-                tqdm_bar.close()
+                with requests.get(proteinatlas, stream=True) as r:
+                    content_size = int(r.headers.get('content-length', 0))
+                    tqdm_bar = tqdm(desc='Downloading ' + os.path.basename(local_file),
+                                    total=content_size,
+                                    unit='B', unit_scale=True,
+                                    unit_divisor=1024)
+                    logger.debug('Downloading ' + str(proteinatlas) +
+                                 ' of size ' + str(content_size) +
+                                 'b to ' + local_file)
+                    try:
+                        r.raise_for_status()
+                        with open(local_file, 'wb') as f:
+                            for chunk in r.iter_content(chunk_size=8192):
+                                f.write(chunk)
+                                tqdm_bar.update(len(chunk))
+                        download_successful = True
+                    finally:
+                        tqdm_bar.close()
 
-        for line in self._readline(local_file):
-            yield line
+                for line in self._readline(local_file):
+                    yield line
+            except RequestException as he:
+                logger.debug(str(he.response.text))
+                retry_num += 1
+                time.sleep(retry_wait)
+
+        if not download_successful:
+            raise CellMapsImageDownloaderError(f'{max_retries} attempts to download proteinatlas file failed')
 
 
 class ProteinAtlasImageUrlReader(object):
