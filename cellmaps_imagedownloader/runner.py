@@ -189,7 +189,7 @@ class MultiProcessImageDownloader(ImageDownloader):
 
     """
 
-    def __init__(self, poolsize=4, skip_existing=False,
+    def __init__(self, poolsize=1, skip_existing=False,
                  override_dfunc=None):
         """
         Constructor
@@ -240,18 +240,28 @@ class MultiProcessImageDownloader(ImageDownloader):
         failed_downloads = []
         logger.debug('Poolsize for image downloader set to: ' +
                      str(self._poolsize))
-        with Pool(processes=self._poolsize) as pool:
-            num_to_download = len(download_list)
-            logger.info(str(num_to_download) + ' images to download')
-            t = tqdm(total=num_to_download, desc='Download',
-                     unit='images')
-            for i in pool.imap_unordered(self._dfunc,
-                                         download_list):
+        num_to_download = len(download_list)
+        logger.info(str(num_to_download) + ' images to download')
+        t = tqdm(total=num_to_download, desc='Download',
+                 unit='images')
+        if self._poolsize <= 1:
+            for entry in download_list:
                 t.update()
-                if i is not None:
+                res = self._dfunc(entry)
+                if res is not None:
                     if logger.isEnabledFor(logging.DEBUG):
-                        logger.debug('Failed download: ' + str(i))
-                    failed_downloads.append(i)
+                        logger.debug('Failed download: ' + str(res))
+                    failed_downloads.append(res)
+        else:
+            with Pool(processes=self._poolsize) as pool:
+                for i in pool.imap_unordered(self._dfunc,
+                                             download_list):
+                    t.update()
+                    if i is not None:
+                        if logger.isEnabledFor(logging.DEBUG):
+                            logger.debug('Failed download: ' + str(i))
+                        failed_downloads.append(i)
+        t.close()
         return failed_downloads
 
 
