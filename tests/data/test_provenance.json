@@ -1,0 +1,25 @@
+{
+  "name": "test",
+  "organization-name": "testorg",
+  "project-name": "testfunding",
+  "cell-line": "testcell",
+  "treatment": "testuntreated",
+  "release": "test 0.1 alpha",
+  "gene-set": "test",
+  "samples": {
+    "name": "test sample",
+    "author": "Bob smith",
+    "version": "0.1",
+    "date-published": "2024-01-01",
+    "description": "test sample desc",
+    "data-format": "CSV"
+  },
+  "unique": {
+    "name": "test unique",
+    "author": "Bob smith",
+    "version": "0.2",
+    "date-published": "2024-01-02",
+    "description": "test unique desc",
+    "data-format": "CSV"
+  }
+}
