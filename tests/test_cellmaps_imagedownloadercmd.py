@@ -44,7 +44,9 @@ class TestCellmapsDownloader(unittest.TestCase):
         # try where loading config is successful
         try:
             temp_dir = tempfile.mkdtemp()
-            res = cellmaps_imagedownloadercmd.main(['myprog.py', temp_dir])
+            res = cellmaps_imagedownloadercmd.main(['myprog.py', temp_dir,
+                                                    '--poolsize', '1',
+                                                    '--skip_logging'])
             self.assertEqual(res, 1)
         finally:
             shutil.rmtree(temp_dir)
