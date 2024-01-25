@@ -68,11 +68,13 @@ class ProteinAtlasReader(object):
         if os.path.isfile(proteinatlas):
             if proteinatlas.endswith('.gz'):
                 with gzip.open(proteinatlas, mode='rt') as f:
-                    for line in f:
+                    for line in tqdm(f, desc='Processing proteinatlas.xml.gz', unit='bytes',
+                                     total=os.path.getsize(proteinatlas)):
                         yield line
                 return
             with open(proteinatlas, 'r') as f:
-                for line in f:
+                for line in tqdm(f, desc='Processing proteinatlas.xml', unit='bytes',
+                                 total=os.path.getsize(proteinatlas)):
                     yield line
             return
         # use python requests to download the file and then get its results
