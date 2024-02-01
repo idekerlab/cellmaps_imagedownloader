@@ -13,6 +13,10 @@ Cell Maps ImmunoFluorescent Image Downloader
         :target: https://cellmaps-imagedownloader.readthedocs.io/en/latest/?badge=latest
         :alt: Documentation Status
 
+.. image:: https://zenodo.org/badge/635992073.svg
+        :target: https://zenodo.org/doi/10.5281/zenodo.10607371
+        :alt: Zenodo DOI badge
+
 
 Downloads ImmunoFluorescent image data from `Human Protein Atlas <https://www.proteinatlas.org/>`__
 
