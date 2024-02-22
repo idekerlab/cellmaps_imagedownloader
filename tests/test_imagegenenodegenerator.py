@@ -287,7 +287,7 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
 
         self.assertEqual({'antibody_one': {'1_A1_2_'},
                           'antibody_two': {'3_B1_4_'}}, filename_dict)
-        self.assertEqual({'antibody_two': 'ensemble_two,ensemble_three'}, ambig_dict)
+        self.assertEqual({'antibody_two': ['ensemble_two', 'ensemble_three']}, ambig_dict)
 
     def test_get_unique_ids_from_samplelist(self):
 
@@ -352,13 +352,13 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
         gene_node_attrs = res[0]
         print(gene_node_attrs)
         print('\n\n\n\n')
-        self.assertTrue('ENSG00000066455' in gene_node_attrs)
-        self.assertEqual('GOLGA5', gene_node_attrs['ENSG00000066455']['name'])
-        self.assertEqual('ensembl:ENSG00000066455', gene_node_attrs['ENSG00000066455']['represents'])
-        self.assertTrue(gene_node_attrs['ENSG00000066455']['filename'] == '1_A1_2_' or
-                        gene_node_attrs['ENSG00000066455']['filename'] == '1_A1_1_')
+        self.assertTrue('GOLGA5' in gene_node_attrs)
+        self.assertEqual('GOLGA5', gene_node_attrs['GOLGA5']['name'])
+        self.assertEqual('ENSG00000066455', gene_node_attrs['GOLGA5']['represents'])
+        self.assertTrue(gene_node_attrs['GOLGA5']['filename'] == '1_A1_2_' or
+                        gene_node_attrs['GOLGA5']['filename'] == '1_A1_1_')
 
-        self.assertTrue('ENSG00000183092' in gene_node_attrs)
+        self.assertTrue('GOLGA5' in gene_node_attrs)
 
         # check errors is empty
         self.assertEqual([], res[1])
@@ -448,11 +448,11 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
                     'position': 'A1',
                     'sample': '1',
                     'antibody': 'HPA000992',
-                    'ensembl_ids': 'ENSG1',
-                    'gene_names': 'XXX'}]
+                    'ensembl_ids': 'ENSG1,ENSG2',
+                    'gene_names': 'geneA'}]
         unique = [{'antibody': 'HPA000992',
-                   'ensembl_ids': 'ENSG1',
-                   'gene_names': 'XXX'}]
+                   'ensembl_ids': 'ENSG1,ENSG2',
+                   'gene_names': 'geneA'}]
 
         mockgenequery = MagicMock()
         mockgenequery.get_symbols_for_genes = MagicMock(return_value=[{'query': 'ENSG1',
@@ -460,14 +460,16 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
                                                                        '_score': 24.515644,
                                                                        'ensembl': [{'gene': 'ENSG1'},
                                                                                    {'gene': 'ENSG2'}],
-                                                                       'symbol': 'XXX'}])
+                                                                       'symbol': 'geneA'}])
 
         imagegen = ImageGeneNodeAttributeGenerator(samples_list=samples,
                                                    unique_list=unique,
                                                    genequery=mockgenequery)
 
         res = imagegen.get_gene_node_attributes()
-        self.assertEqual('ensembl:ENSG1;ENSG2', res[0]['ENSG1']['represents'])
+        print('TEST_LEAH')
+        print(res)
+        self.assertEqual('ENSG1,ENSG2', res[0]['geneA']['represents'])
 
         # check we got no error
         self.assertEqual(0, len(res[1]))
