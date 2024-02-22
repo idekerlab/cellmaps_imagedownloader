@@ -581,7 +581,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                                    sample['sample'] + '_')
             for g in ensembl_ids:
                 #if gene already has nonambgiuous antibody, use that one
-                if antibody in g_antibody_dict:
+                if g in g_antibody_dict:
                     if antibody in ambiguous_antibody_dict:
                         continue
                 g_antibody_dict[g] = antibody
