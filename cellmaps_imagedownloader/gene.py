@@ -572,7 +572,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
 
             ensembl_ids = sample['ensembl_ids'].split(',')
             if len(ensembl_ids) > 1:
-                ambiguous_antibody_dict[antibody] = sample['ensembl_ids']
+                ambiguous_antibody_dict[antibody] = ensembl_ids
 
             if antibody not in antibody_filename_dict:
                 antibody_filename_dict[antibody] = set()
@@ -581,10 +581,10 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                                    sample['sample'] + '_')
             for g in ensembl_ids:
                 #if gene already has nonambgiuous antibody, use that one
-                if g in g_antibody_dict:
-                    if g in ambiguous_antibody_dict:
+                if antibody in g_antibody_dict:
+                    if antibody in ambiguous_antibody_dict:
                         continue
-                g_antibody_dict[g] = sample['antibody']
+                g_antibody_dict[g] = antibody
 
         return g_antibody_dict, antibody_filename_dict, ambiguous_antibody_dict
 
@@ -639,10 +639,15 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
 
         # create a mapping of ensembl id to antibody and ensembl_id to filenames
         # get mapping of ambiguous genes
-        g_antibody_dict, antibody_filename_dict, ambiguous_antibody_dict = self.get_dicts_of_gene_to_antibody_filename()
-
+        query_antibody_dict, antibody_filename_dict, ambiguous_antibody_dict = self.get_dicts_of_gene_to_antibody_filename()
+        
         errors = []
-        gene_node_attrs = {}
+        query_symbol_dict = {}
+        symbol_query_dict = {}
+        symbol_ensembl_dict = {}
+        
+        #loop through query result, and make dictionary mapping 1) query to the correct gene name 2) gene name to all ensembl IDs 3) correct gene name back to query
+        #gene node attributes and filtering is by GENE SYMBOL, column has associated ensembl ID(s) to keep track
         for x in query_res:
 
             # skips item that lacks a symbol like this one:
@@ -655,9 +660,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                               ' no symbol in query result: ' + str(x))
                 logger.error(errors[-1])
                 continue
-
-            ensemblstr = 'ensembl:'
-
+                
             # skips item that lacks anything like this one:
             # {'query': 'ENSG000001', 'notfound': True}
             if 'ensembl' not in x:
@@ -665,10 +668,19 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                               ' no ensembl in query result: ' + str(x))
                 logger.error(errors[-1])
                 continue
-
-            ensembl_id = None
-
-            # check if item 'ensembl' has more then 1 element
+                
+            if x['query'] in query_symbol_dict:
+                continue #duplicate query, just take first result
+            query_symbol_dict[x['query']] = x['symbol']
+            
+            if x['symbol'] not in symbol_query_dict: 
+                symbol_query_dict[x['symbol']] = set()
+            symbol_query_dict[x['symbol']].add(x['query'])
+            
+                        
+            if x['symbol'] not in symbol_ensembl_dict:
+                symbol_ensembl_dict[x['symbol']] = set() 
+            # check if item 'ensembl' has more then 1 element, add list of ensembl genes to link gene symbol to ensemble IDs for the nodes table
             #
             # {'query': 'ENSG00000273706',
             #  '_id': '3975', '_score': 24.515644,
@@ -677,35 +689,47 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
             #  'symbol': 'LHX1'}
             if len(x['ensembl']) > 1:
                 for g in x['ensembl']:
-                    if g['gene'] in g_antibody_dict:
-                        # we need an ensembl id for filename and antibody
-                        # lookup so just grab the 1st one
-                        ensembl_id = g['gene']
-                        break
-                # concatenate ensembl ids and delimit with ;
-                ensemblstr += ';'.join([g['gene'] for g in x['ensembl']])
+                    # concatenate ensembl ids and delimit with ;
+                    symbol_ensembl_dict[x['symbol']].add(g['gene'])
             else:
-                ensemblstr += x['ensembl']['gene']
-                ensembl_id = x['ensembl']['gene']
+                symbol_ensembl_dict[x['symbol']].add(x['ensembl']['gene'])
 
-            if ensembl_id not in g_antibody_dict:
-                continue
-            antibody_str = g_antibody_dict[ensembl_id]
+        #loop through unique gene symbols, make gene nodes attribute file
+        gene_node_attrs = {}
+        for symbol in symbol_query_dict:
+            for query in symbol_query_dict[symbol]:
+                if query not in query_antibody_dict:
+                    continue
 
-            filenames = list(antibody_filename_dict[antibody_str])
-            if len(filenames) < fold:
-                filename_str = filenames[0]
-            else:
-                filename_str = filenames[fold - 1]
+                antibody_str = query_antibody_dict[query]
 
-            ambiguous_str = ''
-            if antibody_str in ambiguous_antibody_dict:
-                ambiguous_str = ambiguous_antibody_dict[antibody_str]
+                filenames = list(antibody_filename_dict[antibody_str])
+                if len(filenames) < fold:
+                    filename_str = filenames[0]
+                else:
+                    filename_str = filenames[fold - 1]
 
-            gene_node_attrs[x['query']] = {'name': x['symbol'],
-                                           'represents': ensemblstr,
-                                           'ambiguous': ambiguous_str,
-                                           'antibody': antibody_str,
-                                           'filename': filename_str}
+                ambiguous_symbols = []
+                if antibody_str in ambiguous_antibody_dict:
+                    ambiguous_queries = ambiguous_antibody_dict[antibody_str]
+                    for ambiguous_query in ambiguous_queries:
+                        if ambiguous_query in query_symbol_dict:
+                            ambiguous_symbols.append(query_symbol_dict[ambiguous_query])
+                        else: 
+                            ambiguous_symbols.append(ambiguous_query)
+                ambiguous_str = ','.join(sorted(ambiguous_symbols))
+
+                ensemble_str = ','.join(sorted(symbol_ensembl_dict[symbol]))
+
+                if symbol in gene_node_attrs:
+                    #if less ambiguous antibody already exists, go with first option; otherwise will replace
+                    if len(ambiguous_symbols) > len(gene_node_attrs[symbol]['ambiguous'].split(',')): 
+                        continue
+
+                gene_node_attrs[symbol] = {'name': symbol,
+                                               'represents': ensemble_str,
+                                               'ambiguous': ambiguous_str,
+                                               'antibody': antibody_str,
+                                               'filename': filename_str}
 
         return gene_node_attrs, errors
