@@ -467,8 +467,6 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
                                                    genequery=mockgenequery)
 
         res = imagegen.get_gene_node_attributes()
-        print('TEST_LEAH')
-        print(res)
         self.assertEqual('ENSG1,ENSG2', res[0]['geneA']['represents'])
 
         # check we got no error
