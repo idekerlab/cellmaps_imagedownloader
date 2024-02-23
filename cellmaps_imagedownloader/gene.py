@@ -650,16 +650,15 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         #gene node attributes and filtering is by GENE SYMBOL, column has associated ensembl ID(s) to keep track
         for x in query_res:
 
-            # skips item that lacks a symbol like this one:
+            # use ensembl ID for symbol if item lacks a symbol like this one:
             # {'query': 'ENSG00000282988',
             #  '_id': 'ENSG00000282988',
             #  '_score': 25.04868,
             #  'ensembl': {'gene': 'ENSG00000282988'}}
             if 'symbol' not in x:
-                errors.append('Skipping ' + str(x) +
-                              ' no symbol in query result: ' + str(x))
-                logger.error(errors[-1])
-                continue
+                symbol = x['query']
+            else:
+                symbol = x['symbol']
                 
             # skips item that lacks anything like this one:
             # {'query': 'ENSG000001', 'notfound': True}
@@ -671,15 +670,15 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                 
             if x['query'] in query_symbol_dict:
                 continue #duplicate query, just take first result
-            query_symbol_dict[x['query']] = x['symbol']
+            query_symbol_dict[x['query']] = symbol
             
-            if x['symbol'] not in symbol_query_dict: 
-                symbol_query_dict[x['symbol']] = set()
-            symbol_query_dict[x['symbol']].add(x['query'])
+            if symbol not in symbol_query_dict: 
+                symbol_query_dict[symbol] = set()
+            symbol_query_dict[symbol].add(x['query'])
             
                         
-            if x['symbol'] not in symbol_ensembl_dict:
-                symbol_ensembl_dict[x['symbol']] = set() 
+            if symbol not in symbol_ensembl_dict:
+                symbol_ensembl_dict[symbol] = set() 
             # check if item 'ensembl' has more then 1 element, add list of ensembl genes to link gene symbol to ensemble IDs for the nodes table
             #
             # {'query': 'ENSG00000273706',
@@ -690,9 +689,9 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
             if len(x['ensembl']) > 1:
                 for g in x['ensembl']:
                     # concatenate ensembl ids and delimit with ;
-                    symbol_ensembl_dict[x['symbol']].add(g['gene'])
+                    symbol_ensembl_dict[symbol].add(g['gene'])
             else:
-                symbol_ensembl_dict[x['symbol']].add(x['ensembl']['gene'])
+                symbol_ensembl_dict[symbol].add(x['ensembl']['gene'])
 
         #loop through unique gene symbols, make gene nodes attribute file
         gene_node_attrs = {}

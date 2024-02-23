@@ -376,18 +376,23 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
 
         mockgenequery = MagicMock()
         mockgenequery.get_symbols_for_genes = MagicMock(return_value=[{'query': 'ENSG1',
-                                                                       'notfound': True}])
+                                                                       '_id': '9950',
+                                                                       '_score': 25.046944,
+                                                                       'ensembl': {'gene':'ENSG1'},
+                                                                       }])
 
         imagegen = ImageGeneNodeAttributeGenerator(samples_list=samples,
                                                    unique_list=unique,
                                                    genequery=mockgenequery)
 
         res = imagegen.get_gene_node_attributes()
-        self.assertEqual({}, res[0])
+        gene_node_attrs = res[0]
 
-        # check we got an error
-        self.assertTrue(1, len(res[1]))
-        self.assertTrue('no symbol in query result' in res[1][0])
+        self.assertTrue('ENSG1' in gene_node_attrs)
+        self.assertEqual('ENSG1', gene_node_attrs['ENSG1']['name'])
+        self.assertEqual('ENSG1', gene_node_attrs['ENSG1']['represents'])
+        self.assertTrue(gene_node_attrs['ENSG1']['filename'] == '1_A1_2_' or
+                        gene_node_attrs['ENSG1']['filename'] == '1_A1_1_')
 
     def test_get_gene_node_attributes_no_ensembl(self):
         samples = [{'if_plate_id': '1',
@@ -402,7 +407,7 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
 
         mockgenequery = MagicMock()
         mockgenequery.get_symbols_for_genes = MagicMock(return_value=[{'query': 'ENSG1',
-                                                                       'symbol': 'XXX',
+                                                                       'notfound': True,
                                                                        }])
 
         imagegen = ImageGeneNodeAttributeGenerator(samples_list=samples,
