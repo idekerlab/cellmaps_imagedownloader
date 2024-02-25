@@ -403,9 +403,12 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
     @staticmethod
     def get_samples_from_csvfile(csvfile=None):
         """
+        Loads samples from a CSV file into a list of dictionaries.
 
-        :param tsvfile:
-        :return:
+        :param csvfile: Path to the CSV file to read samples from.
+        :type csvfile: str
+        :return: A list of dictionaries, where each dictionary represents a sample extracted from the CSV file.
+        :rtype: list
         """
         if csvfile is None:
             raise CellMapsImageDownloaderError('csvfile is None')
@@ -591,14 +594,30 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         return g_antibody_dict, antibody_filename_dict, ambiguous_antibody_dict
 
     def _process_query_results(self, query_res):
+        """
+        Processes the results from a gene symbol query, organizing the data into mappings
+        between queries, symbols, and Ensembl IDs, while capturing errors for any entries
+        that lack necessary information.
+
+        This method iterates over the query results, constructing three main dictionaries:
+        - A mapping from query strings to the corresponding gene name or query (if symbol is missing).
+        - A mapping from gene name to sets of queries that resulted in those symbols (maps gene name back to query
+        gene node attributes and filters it by GENE SYMBOL, column has associated ensembl ID(s) to keep track).
+        - A mapping from gene n to sets of associated Ensembl IDs.
+
+        Entries without an 'ensembl' field are skipped, and an error is logged for each skipped entry.
+
+        :param query_res: A list of dictionaries, each representing a query result.
+        :type query_res: list
+        :return: A tuple containing mappings of query to symbol, symbol to queries, symbol to Ensembl IDs,
+                and a list of errors.
+        :rtype: (dict, dict, dict, list)
+        """
         errors = []
         query_symbol_dict = {}
         symbol_query_dict = {}
         symbol_ensembl_dict = {}
 
-        # loop through query result, and make dictionary mapping 1) query to the correct gene name 2) gene name to
-        # all ensembl IDs 3) correct gene name back to query gene node attributes and filtering is by GENE SYMBOL,
-        # column has associated ensembl ID(s) to keep track
         for x in query_res:
 
             # use ensembl ID for symbol if item lacks a symbol like this one:
@@ -627,19 +646,17 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                 symbol_query_dict[symbol] = set()
             symbol_query_dict[symbol].add(x['query'])
 
-            if symbol not in symbol_ensembl_dict:
-                symbol_ensembl_dict[symbol] = set()
-                # check if item 'ensembl' has more than 1 element, add list of ensembl genes to link gene symbol to
-                # ensemble IDs for the nodes table
-
+            # check if item 'ensembl' has more than 1 element, add list of ensembl genes to link gene symbol to
+            # ensemble IDs for the nodes table
             # {'query': 'ENSG00000273706',
             #  '_id': '3975', '_score': 24.515644,
             #  'ensembl': [{'gene': 'ENSG00000273706'},
             #              {'gene': 'ENSG00000274577'}],
             #  'symbol': 'LHX1'}
+            if symbol not in symbol_ensembl_dict:
+                symbol_ensembl_dict[symbol] = set()
             if len(x['ensembl']) > 1:
                 for g in x['ensembl']:
-                    # concatenate ensembl ids and delimit with ;
                     symbol_ensembl_dict[symbol].add(g['gene'])
             else:
                 symbol_ensembl_dict[symbol].add(x['ensembl']['gene'])
