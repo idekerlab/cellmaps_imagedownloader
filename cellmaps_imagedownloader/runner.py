@@ -80,6 +80,7 @@ class ImageDownloader(object):
     Abstract class that defines interface for classes that download images
 
     """
+
     def __init__(self):
         """
 
@@ -94,7 +95,7 @@ class ImageDownloader(object):
                               full URL of image to download and 2nd
                               element is destination path
         :type download_list: list
-        :return: 
+        :return:
         """
         raise CellMapsImageDownloaderError('Subclasses should implement this')
 
@@ -103,6 +104,7 @@ class CM4AICopyDownloader(ImageDownloader):
     """
     Copies over images from CM4AI RO-Crate
     """
+
     def __init__(self):
         """
         Constructor
@@ -431,8 +433,8 @@ class CellmapsImageDownloader(object):
         """
         software_keywords = self._provenance['keywords']
         software_keywords.extend(['tools', cellmaps_imagedownloader.__name__])
-        software_description = self._provenance['description'] +\
-                               ' ' +\
+        software_description = self._provenance['description'] + \
+                               ' ' + \
                                cellmaps_imagedownloader.__description__
         self._softwareid = self._provenance_utils.register_software(self._outdir,
                                                                     name=cellmaps_imagedownloader.__name__,
@@ -464,6 +466,7 @@ class CellmapsImageDownloader(object):
                      'data-format': 'tsv',
                      'author': cellmaps_imagedownloader.__name__,
                      'version': cellmaps_imagedownloader.__version__,
+                     'schema': 'https://raw.githubusercontent.com/fairscape/cm4ai-schemas/main/v0.1.0/cm4ai_schema_imageloader_gene_node_attributes.json',
                      'keywords': keywords,
                      'date-published': date.today().strftime(self._provenance_utils.get_default_date_format_str())}
         src_file = self.get_image_gene_node_attributes_file(fold)
@@ -543,9 +546,9 @@ class CellmapsImageDownloader(object):
 
         # if input file for samples was not set then write the samples we
         # have to the output directory and use that path as dataset to register
-        if self._input_data_dict is None or\
-              CellmapsImageDownloader.SAMPLES_FILEKEY not in self._input_data_dict or\
-              self._input_data_dict[CellmapsImageDownloader.SAMPLES_FILEKEY] is None:
+        if self._input_data_dict is None or \
+            CellmapsImageDownloader.SAMPLES_FILEKEY not in self._input_data_dict or \
+            self._input_data_dict[CellmapsImageDownloader.SAMPLES_FILEKEY] is None:
             logger.debug('no samples passed in, just write out copy to output directory')
             samples_file = os.path.join(self._outdir, 'samplescopy.csv')
             self._imagegen.write_samples_to_csvfile(csvfile=samples_file)
@@ -572,9 +575,9 @@ class CellmapsImageDownloader(object):
 
         # if input file for unique list was not set then write the unique list we
         # have to the output directory and use that path as dataset to register
-        if self._input_data_dict is None or\
-              CellmapsImageDownloader.UNIQUE_FILEKEY not in self._input_data_dict or\
-              self._input_data_dict[CellmapsImageDownloader.UNIQUE_FILEKEY] is None:
+        if self._input_data_dict is None or \
+            CellmapsImageDownloader.UNIQUE_FILEKEY not in self._input_data_dict or \
+            self._input_data_dict[CellmapsImageDownloader.UNIQUE_FILEKEY] is None:
             unique_file = os.path.join(self._outdir, 'uniquecopy.csv')
             self._imagegen.write_unique_list_to_csvfile(csvfile=unique_file)
             skip_unique_copy = True
@@ -605,11 +608,12 @@ class CellmapsImageDownloader(object):
 
         for c in constants.COLORS:
             cntr = 0
-            for entry in tqdm(os.listdir(os.path.join(self._outdir, c)), desc='FAIRSCAPE ' + c + ' images registration'):
+            for entry in tqdm(os.listdir(os.path.join(self._outdir, c)),
+                              desc='FAIRSCAPE ' + c + ' images registration'):
                 if not entry.endswith(self._imgsuffix):
                     continue
                 fullpath = os.path.join(self._outdir, c, entry)
-                data_dict['name'] = entry + ' ' + c +\
+                data_dict['name'] = entry + ' ' + c + \
                                     ' channel image'
                 if len(data_dict['name']) >= 64:
                     data_dict['name'] = data_dict['name'][:63]
