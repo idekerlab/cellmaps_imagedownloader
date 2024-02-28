@@ -750,35 +750,37 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
         """
         t = tqdm(total=4, desc='Get updated gene symbols',
                  unit='steps')
+        try:
+            t.update()
 
-        t.update()
+            # get the unique set of ensembl_ids for mygene query
+            ensembl_id_list = self._get_unique_ids_from_samplelist()
 
-        # get the unique set of ensembl_ids for mygene query
-        ensembl_id_list = self._get_unique_ids_from_samplelist()
+            t.update()
 
-        t.update()
+            # queries mygene and gets a list of dicts that look like this:
+            # {'query': 'ENSG00000066455',
+            #  '_id': '9950',
+            #  '_score': 25.046944,
+            #  'ensembl': {'gene':'ENSG00000066455'},
+            #  'symbol': 'GOLGA5'
+            # }
+            query_res = self._genequery.get_symbols_for_genes(genelist=ensembl_id_list,
+                                                              scopes='ensembl.gene')
 
-        # queries mygene and gets a list of dicts that look like this:
-        # {'query': 'ENSG00000066455',
-        #  '_id': '9950',
-        #  '_score': 25.046944,
-        #  'ensembl': {'gene':'ENSG00000066455'},
-        #  'symbol': 'GOLGA5'
-        # }
-        query_res = self._genequery.get_symbols_for_genes(genelist=ensembl_id_list,
-                                                          scopes='ensembl.gene')
+            # create a mapping of ensembl id to antibody and ensembl_id to filenames
+            # get mapping of ambiguous genes
+            query_antibody_dict, antibody_filename_dict, ambiguous_antibody_dict = (
+                self.get_dicts_of_gene_to_antibody_filename())
 
-        # create a mapping of ensembl id to antibody and ensembl_id to filenames
-        # get mapping of ambiguous genes
-        query_antibody_dict, antibody_filename_dict, ambiguous_antibody_dict = (
-            self.get_dicts_of_gene_to_antibody_filename())
+            query_symbol_dict, symbol_query_dict, symbol_ensembl_dict, errors = self._process_query_results(query_res)
+            t.update()
 
-        query_symbol_dict, symbol_query_dict, symbol_ensembl_dict, errors = self._process_query_results(query_res)
-        t.update()
+            gene_node_attrs = self._create_gene_node_attributes_dict(symbol_query_dict, query_symbol_dict,
+                                                                     query_antibody_dict, antibody_filename_dict,
+                                                                     ambiguous_antibody_dict, symbol_ensembl_dict, fold)
+            t.update()
 
-        gene_node_attrs = self._create_gene_node_attributes_dict(symbol_query_dict, query_symbol_dict,
-                                                                 query_antibody_dict, antibody_filename_dict,
-                                                                 ambiguous_antibody_dict, symbol_ensembl_dict, fold)
-        t.update()
-
-        return gene_node_attrs, errors
+            return gene_node_attrs, errors
+        finally:
+            t.close()
