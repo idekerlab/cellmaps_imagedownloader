@@ -33,6 +33,7 @@ Overview of Cell Maps Image Downloader
 
    installation
    usage
+   inputs
    outputs
    modules
    developer
