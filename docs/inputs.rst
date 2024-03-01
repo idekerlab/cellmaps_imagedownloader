@@ -56,9 +56,17 @@ Below is the list and description of each input accepted by the tool.
     HPA006550,ENSG00000111229,ARPC3,U-2 OS,Nucleoplasm,1
 
 - ``CM4AI_TABLE_PATH``:
-    Path to TSV file in CM4AI RO-Crate directory. It is expected the directory also contains red/ blue/ green/ yellow/
-    directories with images. The TSV file is expected to have the following columns:
-    Antibody ID     ENSEMBL ID      Treatment       Well    Region
+    Path to TSV file in CM4AI RO-Crate directory. It is expected the directory also contains ``red/`` ``blue/`` ``green/`` ``yellow/``
+    directories with images.
+
+    The .tsv file describes each image in the data set. Each row represents one image. The columns describe the
+    staining from which the image was taken. The TSV file is expected to have the following columns:
+
+    * Antibody ID - describes the antibody ID for the antibody applied to stain the protein visible in the "green" channel. The antibody ID can be looked up at proteinatlas.org to find out more information about the antibody.
+    * ENSEMBL ID - indicates the ENSEMBL ID(s) of the gene(s) of the proteins visualized in the "green" channel.
+    * Treatment - refers to how the cells that are depicted in the image were treated (with Paclitaxel, Vorinostat, or untreated)
+    * Well - refers to the well coordinate on the 96-well plate
+    * Region - is a unique identifier for the position in the well, where the cells were acquired
 
 **Example:**
 
