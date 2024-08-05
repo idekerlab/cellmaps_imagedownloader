@@ -1,3 +1,8 @@
 Sphinx>=1.8.1
 sphinx-rtd-theme
 sphinx-copybutton
+cellmaps_utils
+requests
+mygene
+pandas
+tqdm
