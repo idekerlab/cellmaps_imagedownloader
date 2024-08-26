@@ -25,7 +25,7 @@ Overview of Cell Maps Image Downloader
 
 
 * Free software: MIT license
-
+* Source code: https://github.com/idekerlab/cellmaps_imagedownloader
 
 .. toctree::
    :maxdepth: 2
@@ -33,6 +33,7 @@ Overview of Cell Maps Image Downloader
 
    installation
    usage
+   inputs
    outputs
    modules
    developer
