@@ -2,7 +2,7 @@
 History
 =======
 
-0.1.1 (TBD)
+0.1.1 (2024-08-26)
 ------------------
 
 * Bug fix in adding gene node attributes. The bug was resulting in duplicate entries and
