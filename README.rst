@@ -55,7 +55,7 @@ Installation
    pip install dist/cellmaps_imagedownloader*whl
 
 
-Run **make** command with no arguments to see other build/deploy options including creation of Docker image 
+Run **make** command with no arguments to see other build/deploy options including creation of Docker image
 
 .. code-block::
 
@@ -82,7 +82,7 @@ Output:
    dockerbuild          build docker image and store in local repository
    dockerpush           push image to dockerhub
 
-
+Before running tests, please install ``pip install -r requirements_dev``.
 
 
 Needed files

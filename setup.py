@@ -35,8 +35,6 @@ requirements = ['cellmaps_utils',
 
 setup_requirements = [ ]
 
-test_requirements = ['requests_mock']
-
 setup(
     author=author,
     author_email=email,
@@ -62,8 +60,6 @@ setup(
     package_dir={'cellmaps_imagedownloader': 'cellmaps_imagedownloader'},
     scripts=['cellmaps_imagedownloader/cellmaps_imagedownloadercmd.py'],
     setup_requires=setup_requirements,
-    test_suite='tests',
-    tests_require=test_requirements,
     url=repo_url,
     version=version,
     zip_safe=False)
