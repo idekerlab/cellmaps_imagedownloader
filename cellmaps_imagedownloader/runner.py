@@ -782,6 +782,17 @@ class CellmapsImageDownloader(object):
                 logger.error(image_id + ' not in sample urlmap. setting to no image url found')
                 gene_node_attrs[key][constants.IMAGE_GENE_NODE_IMAGEURL_COL] = 'no image url found'
 
+    def generate_readme(self):
+        description = getattr(cellmaps_imagedownloader, '__description__', 'No description provided.')
+        version = getattr(cellmaps_imagedownloader, '__version__', '0.0.0')
+
+        with open(os.path.join(os.path.dirname(__file__), 'readme_outputs.txt'), 'r') as f:
+            readme_outputs = f.read()
+
+        readme = readme_outputs.format(DESCRIPTION=description, VERSION=version)
+        with open(os.path.join(self._outdir, 'README.txt'), 'w') as f:
+            f.write(readme)
+
     def run(self):
         """
         Downloads images to output directory specified in constructor
@@ -790,13 +801,15 @@ class CellmapsImageDownloader(object):
         :raises CellMapsImageDownloaderError: If there is an error
         :return: 0 upon success, otherwise failure
         """
+        exitcode = 99
         try:
-            exitcode = 99
             self._create_output_directory()
             if self._skip_logging is False:
                 logutils.setup_filelogger(outdir=self._outdir,
                                           handlerprefix='cellmaps_imagedownloader')
             self._write_task_start_json()
+
+            self.generate_readme()
 
             self._update_provenance_with_description()
             self._update_provenance_with_keywords()

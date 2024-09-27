@@ -58,6 +58,7 @@ setup(
     name='cellmaps_imagedownloader',
     packages=find_packages(include=['cellmaps_imagedownloader']),
     package_dir={'cellmaps_imagedownloader': 'cellmaps_imagedownloader'},
+    package_data={'cellmaps_imagedownloader': ['readme_outputs.txt']},
     scripts=['cellmaps_imagedownloader/cellmaps_imagedownloadercmd.py'],
     setup_requires=setup_requirements,
     url=repo_url,
