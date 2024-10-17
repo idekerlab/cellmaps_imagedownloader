@@ -77,11 +77,11 @@ def _parse_arguments(desc, args):
                              'and subsequent images are just copies of those '
                              'images')
     parser.add_argument('--poolsize', type=int,
-                        default=4,
+                        default=MultiProcessImageDownloader.POOL_SIZE,
                         help='If using multiprocessing image downloader, '
                              'this sets number of current downloads to run. '
                              'Note: Going above the default overloads the server')
-    parser.add_argument('--imgsuffix', default='.jpg',
+    parser.add_argument('--imgsuffix', default=CellmapsImageDownloader.IMG_SUFFIX,
                         help='Suffix for images to download')
     parser.add_argument('--skip_existing', action='store_true',
                         help='If set, skips download if image already exists and '

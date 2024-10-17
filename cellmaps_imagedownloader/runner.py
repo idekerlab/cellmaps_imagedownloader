@@ -190,8 +190,9 @@ class MultiProcessImageDownloader(ImageDownloader):
     Uses multiprocess package to download images in parallel
 
     """
+    POOL_SIZE = 4
 
-    def __init__(self, poolsize=1, skip_existing=False,
+    def __init__(self, poolsize=POOL_SIZE, skip_existing=False,
                  override_dfunc=None):
         """
         Constructor
@@ -278,9 +279,10 @@ class CellmapsImageDownloader(object):
 
     SAMPLES_FILEKEY = 'samples'
     UNIQUE_FILEKEY = 'unique'
+    IMG_SUFFIX = '.jpg'
 
     def __init__(self, outdir=None,
-                 imgsuffix='.jpg',
+                 imgsuffix=IMG_SUFFIX,
                  imagedownloader=MultiProcessImageDownloader(),
                  imagegen=None,
                  imageurlgen=None,
@@ -335,6 +337,17 @@ class CellmapsImageDownloader(object):
         self._provenance_utils = provenance_utils
         self._skip_failed = skip_failed
         self._image_dataset_ids = None
+
+        if self._input_data_dict is None:
+            param_dict = {'outdir': self._outdir,
+                          'imgsuffix': self._imgsuffix,
+                          'imagedownloader': str(self._imagedownloader),
+                          'imagegen': str(self._imagegen),
+                          'imageurlgen': str(self._imageurlgen),
+                          'skip_logging': self._skip_logging,
+                          'provenance': str(self._provenance)
+                          }
+            self._input_data_dict = param_dict
 
     @staticmethod
     def get_example_provenance(requiredonly=True,
