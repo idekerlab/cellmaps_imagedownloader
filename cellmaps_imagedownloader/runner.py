@@ -339,15 +339,14 @@ class CellmapsImageDownloader(object):
         self._image_dataset_ids = None
 
         if self._input_data_dict is None:
-            param_dict = {'outdir': self._outdir,
-                          'imgsuffix': self._imgsuffix,
-                          'imagedownloader': str(self._imagedownloader),
-                          'imagegen': str(self._imagegen),
-                          'imageurlgen': str(self._imageurlgen),
-                          'skip_logging': self._skip_logging,
-                          'provenance': str(self._provenance)
-                          }
-            self._input_data_dict = param_dict
+            self._input_data_dict = {'outdir': self._outdir,
+                                     'imgsuffix': self._imgsuffix,
+                                     'imagedownloader': str(self._imagedownloader),
+                                     'imagegen': str(self._imagegen),
+                                     'imageurlgen': str(self._imageurlgen),
+                                     'skip_logging': self._skip_logging,
+                                     'provenance': str(self._provenance)
+                                     }
 
     @staticmethod
     def get_example_provenance(requiredonly=True,

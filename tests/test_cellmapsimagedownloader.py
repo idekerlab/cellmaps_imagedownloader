@@ -120,8 +120,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
                          prov.register_computation.call_args_list[0][1]['name'])
         self.assertEqual('smith',
                          prov.register_computation.call_args_list[0][1]['run_by'])
-        self.assertEqual('None',
-                         prov.register_computation.call_args_list[0][1]['command'])
+        self.assertTrue('/foo' in (prov.register_computation.call_args_list[0][1]['command']))
         self.assertEqual('some desc run of ' + cellmaps_imagedownloader.__name__,
                          prov.register_computation.call_args_list[0][1]['description'])
         self.assertEqual(['hi', 'computation', 'download'],
@@ -155,8 +154,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
                          prov.register_computation.call_args_list[0][1]['name'])
         self.assertEqual('smith',
                          prov.register_computation.call_args_list[0][1]['run_by'])
-        self.assertEqual('None',
-                         prov.register_computation.call_args_list[0][1]['command'])
+        self.assertTrue('/foo' in (prov.register_computation.call_args_list[0][1]['command']))
         self.assertEqual('some desc run of ' + cellmaps_imagedownloader.__name__,
                          prov.register_computation.call_args_list[0][1]['description'])
         self.assertEqual(['hi', 'computation', 'download'],
@@ -192,8 +190,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
                          prov.register_computation.call_args_list[0][1]['name'])
         self.assertEqual('smith',
                          prov.register_computation.call_args_list[0][1]['run_by'])
-        self.assertEqual('None',
-                         prov.register_computation.call_args_list[0][1]['command'])
+        self.assertTrue('/foo' in (prov.register_computation.call_args_list[0][1]['command']))
         self.assertEqual('some desc run of ' + cellmaps_imagedownloader.__name__,
                          prov.register_computation.call_args_list[0][1]['description'])
         self.assertEqual(['hi', 'computation', 'download'],
