@@ -585,7 +585,7 @@ class CellmapsImageDownloader(object):
             self._unique_datasetid = self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY]['guid']
             return
 
-        if self._imagegen._unique_list is None:
+        if self._imagegen is None or self._imagegen.get_unique_list() is None:
             return
 
         # if input file for unique list was not set then write the unique list we

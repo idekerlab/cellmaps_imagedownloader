@@ -14,6 +14,7 @@ import json
 from cellmaps_utils import constants
 import cellmaps_imagedownloader
 from cellmaps_imagedownloader.exceptions import CellMapsImageDownloaderError
+from cellmaps_imagedownloader.gene import ImageGeneNodeAttributeGenerator
 from cellmaps_imagedownloader.runner import CellmapsImageDownloader
 from cellmaps_imagedownloader import runner
 
@@ -344,6 +345,7 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
 
         myobj = CellmapsImageDownloader(outdir='/foo',
                                         provenance=prov_dict,
+                                        imagegen=ImageGeneNodeAttributeGenerator(unique_list=['a']),
                                         input_data_dict={CellmapsImageDownloader.UNIQUE_FILEKEY: '/x/unique.csv'})
         myobj._add_dataset_to_crate = MagicMock()
         myobj._add_dataset_to_crate.side_effect = ['id1']
