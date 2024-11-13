@@ -572,7 +572,7 @@ class CellmapsImageDownloader(object):
         # add samples dataset
         self._samples_datasetid = self._add_dataset_to_crate(
             data_dict=self._provenance[CellmapsImageDownloader.SAMPLES_FILEKEY],
-            source_file=samples_file,
+            source_file=os.path.abspath(samples_file),
             skip_copy=skip_samples_copy)
         logger.debug('Samples dataset id: ' + str(self._samples_datasetid))
 
@@ -583,6 +583,9 @@ class CellmapsImageDownloader(object):
         """
         if 'guid' in self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY]:
             self._unique_datasetid = self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY]['guid']
+            return
+
+        if self._imagegen._unique_list is None:
             return
 
         # if input file for unique list was not set then write the unique list we
@@ -600,7 +603,7 @@ class CellmapsImageDownloader(object):
         # add unique dataset
         self._unique_datasetid = self._add_dataset_to_crate(
             data_dict=self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY],
-            source_file=unique_file,
+            source_file=os.path.abspath(unique_file),
             skip_copy=skip_unique_copy)
         logger.debug('Unique dataset id: ' + str(self._unique_datasetid))
 
