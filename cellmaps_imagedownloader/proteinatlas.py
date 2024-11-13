@@ -15,7 +15,6 @@ from cellmaps_imagedownloader.exceptions import CellMapsImageDownloaderError
 
 logger = logging.getLogger(__name__)
 
-
 class ProteinAtlasReader(object):
     """
     Returns contents of proteinatlas.xml file one
@@ -77,8 +76,16 @@ class ProteinAtlasReader(object):
                                  total=os.path.getsize(proteinatlas)):
                     yield line
             return
+
+        local_file = self.download_proteinalas_file(self._outdir, proteinatlas, max_retries, retry_wait)
+
+        for line in self._readline(local_file):
+            yield line
+
+    @staticmethod
+    def download_proteinalas_file(outdir, proteinatlas, max_retries=3, retry_wait=10):
         # use python requests to download the file and then get its results
-        local_file = os.path.join(self._outdir,
+        local_file = os.path.join(outdir,
                                   proteinatlas.split('/')[-1])
 
         retry_num = 0
@@ -104,8 +111,8 @@ class ProteinAtlasReader(object):
                     finally:
                         tqdm_bar.close()
 
-                for line in self._readline(local_file):
-                    yield line
+                return local_file
+
             except RequestException as he:
                 logger.debug(str(he.response.text))
                 retry_num += 1
