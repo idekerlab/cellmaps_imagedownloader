@@ -60,14 +60,17 @@ class ProteinAtlasProcessor(object):
 
     def __init__(self, outdir=None,
                  proteinatlas=None,
-                 proteinlist_file=None):
+                 proteinlist_file=None,
+                 cell_line=None):
 
+        self.protein_set = None
         self._outdir = outdir
         if proteinatlas is None:
             self._proteinatlas = ProteinAtlasReader.DEFAULT_PROTEINATLAS_URL
         else:
             self._proteinatlas = proteinatlas
         self._proteinlist_file = proteinlist_file
+        self._cell_line = cell_line
 
     def _create_output_directory(self):
         if os.path.isdir(self._outdir):
@@ -95,7 +98,8 @@ class ProteinAtlasProcessor(object):
 
     def get_sample_list_from_hpa(self):
         self._create_output_directory()
-        self._read_protein_list()
+        if self._proteinlist_file:
+            self._read_protein_list()
 
         if not os.path.isfile(self._proteinatlas):
             proteinatlas_gz_file = download_proteinalas_file(self._outdir, self._proteinatlas)
@@ -108,7 +112,7 @@ class ProteinAtlasProcessor(object):
         for event, elem in context:
             if elem.tag == 'entry':
                 gene_name = elem.find('name').text if elem.find('name') is not None else None
-                if gene_name not in self.protein_set:
+                if self.protein_set and gene_name not in self.protein_set:
                     elem.clear()
                     continue
 
@@ -127,11 +131,12 @@ class ProteinAtlasProcessor(object):
                 data_points = image_data.findall('.//data')
                 for dp in data_points:
                     cellline = dp.find('cellLine').text
+                    if self._cell_line and cellline.upper() != self._cell_line:
+                        continue
                     locations = [location.text for location in dp.findall('.//location')]
                     image_urls = [image.find('imageUrl').text for image in dp.findall('.//image') if
                                   'blue' in image.find('imageUrl').text]
                     if len(image_urls) == 0:
-                        elem.clear()
                         continue
 
                     for im_url in image_urls:

@@ -55,7 +55,6 @@ def _parse_arguments(desc, args):
                              'sample,status,locations,antibody,ensembl_ids,'
                              'gene_names\n/archive/1/1_A1_1_,1,A1,1,35,'
                              'Golgi apparatus,HPA000992,ENSG00000066455,GOLGA5')
-    parser.add_argument('--protein_list', help='List of proteins for which HPA images will be downloaded')
     parser.add_argument('--unique',
                         help='(Deprecated: Using --samples flag only is enough) '
                              'CSV file of unique samples '
@@ -64,6 +63,9 @@ def _parse_arguments(desc, args):
                              'locations,n_location\n'
                              'HPA040086,ENSG00000094914,AAAS,U-2 OS,'
                              'Nuclear membrane,1')
+    parser.add_argument('--protein_list', help='List of proteins for which HPA images will be downloaded')
+    parser.add_argument('--cell_line', help='Cell line for which HPA images will be downloaded',
+                        default='U2OS')
     parser.add_argument('--provenance',
                         help='Path to file containing provenance '
                              'information about input files in JSON format. '
@@ -217,13 +219,12 @@ Additional optional fields for registering datasets include
 
         created_outdir = False
         if theargs.cm4ai_table is None and theargs.samples is None:
-            if theargs.protein_list is not None:
-                hpa_processor = ProteinAtlasProcessor(theargs.outdir, theargs.proteinatlasxml, theargs.protein_list)
-                theargs.samples, theargs.proteinatlasxml = hpa_processor.get_sample_list_from_hpa()
-                created_outdir = True
-            else:
-                raise CellMapsImageDownloaderError("Required: Provide samples table, cm4ai image table or list of "
-                                                   "proteins (gene names) for which images from HPA will be downloaded")
+            hpa_processor = ProteinAtlasProcessor(theargs.outdir, theargs.proteinatlasxml, theargs.protein_list,
+                                                  theargs.cell_line)
+            theargs.samples, theargs.proteinatlasxml = hpa_processor.get_sample_list_from_hpa()
+            created_outdir = True
+            if theargs.protein_list is None and theargs.cell_line is None:
+                logger.warning("Downloading all images from HPA. No protein list or cell line specified.")
 
         if theargs.cm4ai_table is not None:
             converter = CM4AITableConverter(cm4ai=theargs.cm4ai_table)
