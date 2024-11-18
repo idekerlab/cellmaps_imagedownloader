@@ -1,9 +1,11 @@
-
 import os
 import re
 import gzip
 import logging
+import shutil
 import time
+import xml.etree.ElementTree as ET
+import pandas as pd
 
 import requests
 from requests import RequestException
@@ -12,8 +14,152 @@ from tqdm import tqdm
 from cellmaps_utils import constants
 from cellmaps_imagedownloader.exceptions import CellMapsImageDownloaderError
 
-
 logger = logging.getLogger(__name__)
+
+
+def download_proteinalas_file(outdir, proteinatlas, max_retries=3, retry_wait=10):
+    # use python requests to download the file and then get its results
+    local_file = os.path.join(outdir,
+                              proteinatlas.split('/')[-1])
+
+    retry_num = 0
+    download_successful = False
+    while retry_num < max_retries and not download_successful:
+        try:
+            with requests.get(proteinatlas, stream=True) as r:
+                content_size = int(r.headers.get('content-length', 0))
+                tqdm_bar = tqdm(desc='Downloading ' + os.path.basename(local_file),
+                                total=content_size,
+                                unit='B', unit_scale=True,
+                                unit_divisor=1024)
+                logger.debug('Downloading ' + str(proteinatlas) +
+                             ' of size ' + str(content_size) +
+                             'b to ' + local_file)
+                try:
+                    r.raise_for_status()
+                    with open(local_file, 'wb') as f:
+                        for chunk in r.iter_content(chunk_size=8192):
+                            f.write(chunk)
+                            tqdm_bar.update(len(chunk))
+                    download_successful = True
+                finally:
+                    tqdm_bar.close()
+
+            return local_file
+
+        except RequestException as he:
+            logger.debug(str(he.response.text))
+            retry_num += 1
+            time.sleep(retry_wait)
+
+    if not download_successful:
+        raise CellMapsImageDownloaderError(f'{max_retries} attempts to download proteinatlas file failed')
+
+
+class ProteinAtlasProcessor(object):
+
+    def __init__(self, outdir=None,
+                 proteinatlas=None,
+                 proteinlist_file=None):
+
+        self._outdir = outdir
+        if proteinatlas is None:
+            self._proteinatlas = ProteinAtlasReader.DEFAULT_PROTEINATLAS_URL
+        else:
+            self._proteinatlas = proteinatlas
+        self._proteinlist_file = proteinlist_file
+
+    def _create_output_directory(self):
+        if os.path.isdir(self._outdir):
+            raise CellMapsImageDownloaderError(self._outdir + ' already exists')
+        else:
+            os.makedirs(self._outdir, mode=0o755)
+
+    def _read_protein_list(self):
+        protein_list = list()
+        with open(self._proteinlist_file, 'r') as f:
+            for line in f:
+                protein_list.append(line.strip())
+
+        self.protein_set = set(protein_list)
+
+    @staticmethod
+    def _decompress_gz_file(gz_file, output_file):
+        """
+        Decompress a .gz file.
+        """
+        with gzip.open(gz_file, 'rb') as f_in:
+            with open(output_file, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+        return output_file
+
+    def get_sample_list_from_hpa(self):
+        self._create_output_directory()
+        self._read_protein_list()
+
+        if not os.path.isfile(self._proteinatlas):
+            proteinatlas_gz_file = download_proteinalas_file(self._outdir, self._proteinatlas)
+            proteinatlas_xml_file = proteinatlas_gz_file.replace('.gz', '')
+            self._proteinatlas = self._decompress_gz_file(proteinatlas_gz_file, proteinatlas_xml_file)
+
+        data = []
+
+        context = ET.iterparse(self._proteinatlas, events=('end',))
+        for event, elem in context:
+            if elem.tag == 'entry':
+                gene_name = elem.find('name').text if elem.find('name') is not None else None
+                if gene_name not in self.protein_set:
+                    elem.clear()
+                    continue
+
+                antibody_elem = elem.find('antibody')
+                if antibody_elem is None:
+                    elem.clear()
+                    continue
+
+                antibody = antibody_elem.attrib['id'] if elem.find('antibody') is not None else None
+
+                image_data = antibody_elem.find('cellExpression')
+                if image_data is None or image_data.attrib['source'] != "HPA":
+                    elem.clear()
+                    continue
+
+                data_points = image_data.findall('.//data')
+                for dp in data_points:
+                    cellline = dp.find('cellLine').text
+                    locations = [location.text for location in dp.findall('.//location')]
+                    image_urls = [image.find('imageUrl').text for image in dp.findall('.//image') if
+                                  'blue' in image.find('imageUrl').text]
+                    if len(image_urls) == 0:
+                        elem.clear()
+                        continue
+
+                    for im_url in image_urls:
+                        filename = im_url.split("/")[-1].replace('blue_red_green.jpg', '')
+                        values_file = filename.split("_")
+                        if_plate, position, sample = values_file[0], values_file[1], values_file[2]
+                        data.append({
+                            'filename': filename,
+                            'if_plate_id': if_plate,
+                            'position': position,
+                            'sample': sample,
+                            'status': 35,
+                            'locations': ', '.join(locations),
+                            'antibody': antibody,
+                            'ensembl_ids': elem.attrib['url'].split('/')[-1],
+                            'gene_names': gene_name,
+                            'atlas_name': cellline,
+                            'image_urls': im_url
+                        })
+
+                elem.clear()
+
+        df = pd.DataFrame(data)
+        samples_file = os.path.join(self._outdir, 'samples.csv')
+        df.to_csv(samples_file)
+
+        return samples_file, self._proteinatlas
+
 
 class ProteinAtlasReader(object):
     """
@@ -77,49 +223,10 @@ class ProteinAtlasReader(object):
                     yield line
             return
 
-        local_file = self.download_proteinalas_file(self._outdir, proteinatlas, max_retries, retry_wait)
+        local_file = download_proteinalas_file(self._outdir, proteinatlas, max_retries, retry_wait)
 
         for line in self._readline(local_file):
             yield line
-
-    @staticmethod
-    def download_proteinalas_file(outdir, proteinatlas, max_retries=3, retry_wait=10):
-        # use python requests to download the file and then get its results
-        local_file = os.path.join(outdir,
-                                  proteinatlas.split('/')[-1])
-
-        retry_num = 0
-        download_successful = False
-        while retry_num < max_retries and not download_successful:
-            try:
-                with requests.get(proteinatlas, stream=True) as r:
-                    content_size = int(r.headers.get('content-length', 0))
-                    tqdm_bar = tqdm(desc='Downloading ' + os.path.basename(local_file),
-                                    total=content_size,
-                                    unit='B', unit_scale=True,
-                                    unit_divisor=1024)
-                    logger.debug('Downloading ' + str(proteinatlas) +
-                                 ' of size ' + str(content_size) +
-                                 'b to ' + local_file)
-                    try:
-                        r.raise_for_status()
-                        with open(local_file, 'wb') as f:
-                            for chunk in r.iter_content(chunk_size=8192):
-                                f.write(chunk)
-                                tqdm_bar.update(len(chunk))
-                        download_successful = True
-                    finally:
-                        tqdm_bar.close()
-
-                return local_file
-
-            except RequestException as he:
-                logger.debug(str(he.response.text))
-                retry_num += 1
-                time.sleep(retry_wait)
-
-        if not download_successful:
-            raise CellMapsImageDownloaderError(f'{max_retries} attempts to download proteinatlas file failed')
 
 
 class ProteinAtlasImageUrlReader(object):
@@ -179,6 +286,7 @@ class ImageDownloadTupleGenerator(object):
     """
     Gets URL to download images for given samples
     """
+
     def __init__(self, samples_list=None,
                  reader=None,
                  valid_image_ids=None):
@@ -232,7 +340,7 @@ class ImageDownloadTupleGenerator(object):
         :return: (image url prefix, suffix ie .jpg)
         :rtype: tuple
         """
-        prefix = image_url[:image_url.index('_blue')+1]
+        prefix = image_url[:image_url.index('_blue') + 1]
         suffix = image_url[image_url.rindex('.'):]
         return prefix, suffix
 
@@ -250,9 +358,9 @@ class ImageDownloadTupleGenerator(object):
             self._populate_sample_urlmap()
 
         for sample in self._samples_list:
-            image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' +\
-                       sample['if_plate_id'] +\
-                       '_' + sample['position'] +\
+            image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' + \
+                       sample['if_plate_id'] + \
+                       '_' + sample['position'] + \
                        '_' + sample['sample'] + '_'
             if image_id not in self._sample_urlmap:
                 logger.error(image_id + ' not in sample map which means '
@@ -260,8 +368,8 @@ class ImageDownloadTupleGenerator(object):
                                         'said image')
                 continue
 
-            image_filename = sample['if_plate_id'] +\
-                             '_' + sample['position'] +\
+            image_filename = sample['if_plate_id'] + \
+                             '_' + sample['position'] + \
                              '_' + sample['sample'] + '_'
             for c in constants.COLORS:
                 sample_url = self._sample_urlmap[image_id]
@@ -277,6 +385,7 @@ class LinkPrefixImageDownloadTupleGenerator(object):
     """
     Gets URL to download images for given samples
     """
+
     def __init__(self, samples_list=None):
         """
 
@@ -320,7 +429,7 @@ class LinkPrefixImageDownloadTupleGenerator(object):
         :return: (image url prefix, suffix ie .jpg)
         :rtype: tuple
         """
-        prefix = image_url[:image_url.index('_blue')+1]
+        prefix = image_url[:image_url.index('_blue') + 1]
         suffix = image_url[image_url.rindex('.'):]
         return prefix, suffix
 
@@ -336,16 +445,16 @@ class LinkPrefixImageDownloadTupleGenerator(object):
             self._populate_sample_urlmap()
 
         for sample in self._samples_list:
-            image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' +\
-                       sample['if_plate_id'] +\
-                       '_' + sample['position'] +\
+            image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' + \
+                       sample['if_plate_id'] + \
+                       '_' + sample['position'] + \
                        '_' + sample['sample'] + '_'
             if image_id not in self._sample_urlmap:
                 logger.error(image_id + ' not in sample map')
                 continue
 
-            image_filename = sample['if_plate_id'] +\
-                             '_' + sample['position'] +\
+            image_filename = sample['if_plate_id'] + \
+                             '_' + sample['position'] + \
                              '_' + sample['sample'] + '_'
             for c in constants.COLORS:
                 sample_url = self._sample_urlmap[image_id]
@@ -361,6 +470,7 @@ class CM4AIImageCopyTupleGenerator(object):
     """
     Gets URL to download images for given samples
     """
+
     def __init__(self, samples_list=None):
         """
 
@@ -421,16 +531,16 @@ class CM4AIImageCopyTupleGenerator(object):
             self._populate_sample_urlmap()
 
         for sample in self._samples_list:
-            image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' +\
-                       sample['if_plate_id'] +\
-                       '_' + sample['position'] +\
+            image_id = re.sub('^HPA0*|^CAB0*', '', sample['antibody']) + '/' + \
+                       sample['if_plate_id'] + \
+                       '_' + sample['position'] + \
                        '_' + sample['sample'] + '_'
             if image_id not in self._sample_urlmap:
                 logger.error(image_id + ' not in sample map')
                 continue
 
-            image_filename = sample['if_plate_id'] +\
-                             '_' + sample['position'] +\
+            image_filename = sample['if_plate_id'] + \
+                             '_' + sample['position'] + \
                              '_' + sample['sample'] + '_'
             for c in constants.COLORS:
                 sample_url = self._sample_urlmap[image_id]

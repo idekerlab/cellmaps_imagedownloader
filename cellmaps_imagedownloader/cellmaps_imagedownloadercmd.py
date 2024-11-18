@@ -10,18 +10,18 @@ import warnings
 from cellmaps_utils import logutils
 from cellmaps_utils import constants
 import cellmaps_imagedownloader
+from cellmaps_imagedownloader.exceptions import CellMapsImageDownloaderError
 from cellmaps_imagedownloader.runner import MultiProcessImageDownloader
 from cellmaps_imagedownloader.runner import FakeImageDownloader
 from cellmaps_imagedownloader.runner import CellmapsImageDownloader
 from cellmaps_imagedownloader.runner import CM4AICopyDownloader
 from cellmaps_imagedownloader.gene import ImageGeneNodeAttributeGenerator
 from cellmaps_imagedownloader.gene import CM4AITableConverter
-from cellmaps_imagedownloader.proteinatlas import ProteinAtlasReader
+from cellmaps_imagedownloader.proteinatlas import ProteinAtlasReader, ProteinAtlasProcessor
 from cellmaps_imagedownloader.proteinatlas import ProteinAtlasImageUrlReader
 from cellmaps_imagedownloader.proteinatlas import ImageDownloadTupleGenerator
 from cellmaps_imagedownloader.proteinatlas import LinkPrefixImageDownloadTupleGenerator
 from cellmaps_imagedownloader.proteinatlas import CM4AIImageCopyTupleGenerator
-
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +55,10 @@ def _parse_arguments(desc, args):
                              'sample,status,locations,antibody,ensembl_ids,'
                              'gene_names\n/archive/1/1_A1_1_,1,A1,1,35,'
                              'Golgi apparatus,HPA000992,ENSG00000066455,GOLGA5')
+    parser.add_argument('--protein_list', help='List of proteins for which HPA images will be downloaded')
     parser.add_argument('--unique',
-                        help='CSV file of unique samples '
+                        help='(Deprecated: Using --samples flag only is enough) '
+                             'CSV file of unique samples '
                              'in format of:\n'
                              'antibody,ensembl_ids,gene_names,atlas_name,'
                              'locations,n_location\n'
@@ -213,6 +215,16 @@ Additional optional fields for registering datasets include
         with open(theargs.provenance, 'r') as f:
             json_prov = json.load(f)
 
+        created_outdir = False
+        if theargs.cm4ai_table is None and theargs.samples is None:
+            if theargs.protein_list is not None:
+                hpa_processor = ProteinAtlasProcessor(theargs.outdir, theargs.proteinatlasxml, theargs.protein_list)
+                theargs.samples, theargs.proteinatlasxml = hpa_processor.get_sample_list_from_hpa()
+                created_outdir = True
+            else:
+                raise CellMapsImageDownloaderError("Required: Provide samples table, cm4ai image table or list of "
+                                                   "proteins (gene names) for which images from HPA will be downloaded")
+
         if theargs.cm4ai_table is not None:
             converter = CM4AITableConverter(cm4ai=theargs.cm4ai_table)
             samples_list, unique_list = converter.get_samples_and_unique_lists()
@@ -252,7 +264,8 @@ Additional optional fields for registering datasets include
                                        skip_logging=theargs.skip_logging,
                                        input_data_dict=theargs.__dict__,
                                        provenance=json_prov,
-                                       skip_failed=theargs.skip_failed).run()
+                                       skip_failed=theargs.skip_failed,
+                                       existing_outdir=created_outdir).run()
     except Exception as e:
         logger.exception('Caught exception: ' + str(e))
         return 2

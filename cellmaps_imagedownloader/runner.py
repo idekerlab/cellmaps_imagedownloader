@@ -290,7 +290,8 @@ class CellmapsImageDownloader(object):
                  provenance=None,
                  input_data_dict=None,
                  provenance_utils=ProvenanceUtil(),
-                 skip_failed=False):
+                 skip_failed=False,
+                 existing_outdir=False):
         """
         Constructor
 
@@ -337,6 +338,7 @@ class CellmapsImageDownloader(object):
         self._provenance_utils = provenance_utils
         self._skip_failed = skip_failed
         self._image_dataset_ids = None
+        self._existing_outdir = existing_outdir
 
         if self._input_data_dict is None:
             self._input_data_dict = {'outdir': self._outdir,
@@ -425,10 +427,12 @@ class CellmapsImageDownloader(object):
 
         :raises CellmapsDownloaderError: If output directory is None or if directory already exists
         """
-        if os.path.isdir(self._outdir):
-            raise CellMapsImageDownloaderError(self._outdir + ' already exists')
+        if not self._existing_outdir:
+            if os.path.isdir(self._outdir):
+                raise CellMapsImageDownloaderError(self._outdir + ' already exists')
+            else:
+                os.makedirs(self._outdir, mode=0o755)
 
-        os.makedirs(self._outdir, mode=0o755)
         for cur_color in constants.COLORS:
             cdir = os.path.join(self._outdir, cur_color)
             if not os.path.isdir(cdir):
@@ -568,6 +572,8 @@ class CellmapsImageDownloader(object):
         else:
             samples_file = self._input_data_dict[CellmapsImageDownloader.SAMPLES_FILEKEY]
             skip_samples_copy = False
+            if os.path.exists(os.path.join(self._outdir, 'samples.csv')):
+                skip_samples_copy = True
 
         # add samples dataset
         self._samples_datasetid = self._add_dataset_to_crate(
@@ -581,11 +587,11 @@ class CellmapsImageDownloader(object):
 
         :return:
         """
-        if 'guid' in self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY]:
-            self._unique_datasetid = self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY]['guid']
+        if self._imagegen is None or self._imagegen.get_unique_list() is None:
             return
 
-        if self._imagegen is None or self._imagegen.get_unique_list() is None:
+        if 'guid' in self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY]:
+            self._unique_datasetid = self._provenance[CellmapsImageDownloader.UNIQUE_FILEKEY]['guid']
             return
 
         # if input file for unique list was not set then write the unique list we
