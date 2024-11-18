@@ -268,7 +268,10 @@ class TestCellmapsdownloaderrunner(unittest.TestCase):
         self.assertEqual('1', myobj._samples_datasetid)
 
     def test_register_unique_dataset_guid_already_set(self):
+        imagegen = MagicMock()
+        imagegen.write_unique_list_to_csvfile = MagicMock()
         myobj = CellmapsImageDownloader(outdir='/foo',
+                                        imagegen=imagegen,
                                         provenance={CellmapsImageDownloader.UNIQUE_FILEKEY: {'guid': '2'}})
         myobj._register_unique_dataset()
         self.assertEqual('2', myobj._unique_datasetid)
