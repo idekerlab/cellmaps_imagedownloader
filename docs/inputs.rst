@@ -33,27 +33,19 @@ Below is the list and description of each input accepted by the tool.
     /archive/7/7_E8_1_,7,E8,1,35,Nuclear speckles,HPA006628,ENSG00000239306,RBM14
     /archive/7/7_E8_2_,7,E8,2,35,Nuclear speckles,HPA006628,ENSG00000239306,RBM14
 
-- ``unique.csv``:
-    CSV file of unique samples. The file should have columns like antibody, ensembl_ids, gene_names, atlas_name, locations, and n_location.
-
-    Definition of columns:
-
-    * antibody - Name of antibody used for acquired image (string)
-    * ensembl_ids - Comma delimited list of ensembl IDs for target protein(s) (string)
-    * gene_names - Comma delimited list of gene names for target proteins(s) (string)
-    * atlas_name - Cell line (string)
-    * locations - Comma delimited list of subcellular locations (string)
-    * n_location - Number of subcellular locations (int)
+- ``proteins.txt``:
+    List of proteins for which HPA images will be downloaded. Each protein in new line.
 
 **Example:**
 
 .. code-block::
 
-    antibody,ensembl_ids,gene_names,atlas_name,locations,n_location
-    CAB004303,ENSG00000072110,ACTN1,U-2 OS,"Focal adhesion sites,Plasma membrane",2
-    HPA046964,ENSG00000182718,ANXA2,U-2 OS,"Cytosol,Plasma membrane",2
-    HPA002564,ENSG00000100823,APEX1,U-2 OS,Nucleoplasm,1
-    HPA006550,ENSG00000111229,ARPC3,U-2 OS,Nucleoplasm,1
+    ELOA
+    RBM14
+    SRSF11
+    MCM3
+    APEX1
+
 
 - ``CM4AI_TABLE_PATH``:
     Path to TSV file in CM4AI RO-Crate directory. It is expected the directory also contains ``red/`` ``blue/`` ``green/`` ``yellow/``

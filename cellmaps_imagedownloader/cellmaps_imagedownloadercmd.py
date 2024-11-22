@@ -64,8 +64,9 @@ def _parse_arguments(desc, args):
                              'HPA040086,ENSG00000094914,AAAS,U-2 OS,'
                              'Nuclear membrane,1')
     parser.add_argument('--protein_list', help='List of proteins for which HPA images will be downloaded')
-    parser.add_argument('--cell_line', help='Cell line for which HPA images will be downloaded',
-                        default='U2OS')
+    parser.add_argument('--cell_line',
+                        help='Cell line for which HPA images will be downloaded. See available cell lines at '
+                             'https://www.proteinatlas.org/humanproteome/cell+line.', default='U2OS')
     parser.add_argument('--provenance',
                         help='Path to file containing provenance '
                              'information about input files in JSON format. '
@@ -219,12 +220,13 @@ Additional optional fields for registering datasets include
 
         created_outdir = False
         if theargs.cm4ai_table is None and theargs.samples is None:
+            if theargs.protein_list is None and theargs.cell_line is None:
+                raise CellMapsImageDownloaderError("Either protein list, cell line, samples or cm4ai table "
+                                                   "parameter should be specified.")
             hpa_processor = ProteinAtlasProcessor(theargs.outdir, theargs.proteinatlasxml, theargs.protein_list,
                                                   theargs.cell_line)
             theargs.samples, theargs.proteinatlasxml = hpa_processor.get_sample_list_from_hpa()
             created_outdir = True
-            if theargs.protein_list is None and theargs.cell_line is None:
-                logger.warning("Downloading all images from HPA. No protein list or cell line specified.")
 
         if theargs.cm4ai_table is not None:
             converter = CM4AITableConverter(cm4ai=theargs.cm4ai_table)

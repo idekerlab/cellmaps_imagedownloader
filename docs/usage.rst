@@ -34,20 +34,24 @@ For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
 - ``--provenance PROVENANCE_PATH``
     Path to file containing provenance information about input files in JSON format.
 
-*Optional but either `samples` and `unique` parameters, or `cm4ai_table` parameter is required*
+*Optional but either `samples`, `cm4ai_table`, `protein_list` or `cell_line` parameter is required*
 
 - ``--samples SAMPLES_PATH``
     CSV file with list of IF images to download. The file follow a specific format with columns such as
     filename, if_plate_id, position, sample, locations, antibody, ensembl_ids, and gene_names.
 
-- ``--unique UNIQUE_PATH``
-    CSV file of unique samples. The file should have columns like antibody, ensembl_ids, gene_names, atlas_name, locations, and n_location.
+- ``--protein_list``
+    List of proteins for which HPA images will be downloaded. Each protein in new line.
+
+- ``--cell_line``
+    Cell line for which HPA images will be downloaded. See available cell lines at https://www.proteinatlas.org/humanproteome/cell+line.
 
 - ``--cm4ai_table CM4AI_TABLE_PATH``
     Path to TSV file in CM4AI RO-Crate directory.
 
 *Optional*
 
+- ``--unique UNIQUE_PATH``: (Deprecated: Using --samples flag only is enough) CSV file of unique samples. The file should have columns like antibody, ensembl_ids, gene_names, atlas_name, locations, and n_location.
 - ``--proteinatlasxml``: URL or path to ``proteinatlas.xml`` or ``proteinatlas.xml.gz`` file.
 - ``--fake_images``: If set, the first image of each color is downloaded, and subsequent images are copies of those images. If ``--cm4ai_table`` flag is set, the ``--fake_images`` flag is ignored.
 - ``--poolsize``: If using multiprocessing image downloader, this sets the number of current downloads to run.

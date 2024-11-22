@@ -161,7 +161,7 @@ class ProteinAtlasProcessor(object):
 
         df = pd.DataFrame(data)
         samples_file = os.path.join(self._outdir, 'samples.csv')
-        df.to_csv(samples_file)
+        df.to_csv(samples_file, index=False)
 
         return samples_file, self._proteinatlas
 
