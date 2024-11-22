@@ -2,6 +2,13 @@
 History
 =======
 
+0.2.0 (2024-11-22)
+------------------
+
+* Added `--protein_list` and `--cell_line` flags that will fetch images from HPA for specific proteins and/or cell line.
+
+* Bug fixes in fairscape registration.
+
 0.1.1 (2024-08-26)
 ------------------
 
