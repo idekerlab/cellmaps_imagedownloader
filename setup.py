@@ -27,11 +27,11 @@ with open('README.rst') as readme_file:
 with open('HISTORY.rst') as history_file:
     history = history_file.read()
 
-requirements = ['cellmaps_utils',
-                'requests',
-                'mygene',
-                'pandas',
-                'tqdm']
+requirements = ['cellmaps_utils>=0.4.0,<1.0.0',
+                'requests>=2.32.3,<3.0.0',
+                'mygene>=3.2.2,<4.0.0',
+                'pandas>=2.0.0,<3.0.0',
+                'tqdm>=4.67.1,<5.0.0']
 
 setup_requirements = [ ]
 
