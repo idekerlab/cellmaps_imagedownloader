@@ -1,7 +1,7 @@
 =============================================
 Cell Maps ImmunoFluorescent Image Downloader
 =============================================
-
+**The Cell Maps Image Downloader is part of the Cell Mapping Toolkit**
 
 .. image:: https://img.shields.io/pypi/v/cellmaps_imagedownloader.svg
         :target: https://pypi.python.org/pypi/cellmaps_imagedownloader
