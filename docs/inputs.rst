@@ -2,9 +2,9 @@
 Inputs
 =======
 
-The tool requires one of the following sets of inputs: either a CSV file containing a list of IF images to download and
-a separate CSV file with a list of unique samples, or a single path to a TSV file located in the CM4AI RO-Crate directory.
-It also requires path to file containing provenance information about input files in JSON format.
+The tool requires one of the following inputs: a CSV file containing a list of IF images to download,  a TXT/CSV file
+with a list of proteins for which IF images will be downloaded, or a single path to a TSV file located in the CM4AI
+RO-Crate directory. It also requires path to file containing provenance information about input files in JSON format.
 
 Below is the list and description of each input accepted by the tool.
 
