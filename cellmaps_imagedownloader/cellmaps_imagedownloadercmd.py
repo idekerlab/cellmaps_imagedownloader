@@ -1,12 +1,16 @@
 #! /usr/bin/env python
 
 import argparse
+import glob
 import sys
 import logging
 import logging.config
 import json
 import warnings
+import os
+import zipfile
 
+import requests
 from cellmaps_utils import logutils
 from cellmaps_utils import constants
 import cellmaps_imagedownloader
@@ -49,6 +53,11 @@ def _parse_arguments(desc, args):
                              'columns: Antibody ID     ENSEMBL ID      '
                              'Treatment      '
                              ' Well    Region')
+    parser.add_argument('--dataverse_doi',
+                        help='DOI to datasets within Dataverse')
+    parser.add_argument('--dataverse_dataset', help='Specifies the name of dataset with images that will '
+                                                    'be downloaded (required if you specify dataverse DOI) e.g. '
+                                                    'cm4ai_chromatin_mda-mb-468_paclitaxel_ifimage_0.1_alpha.zip.')
     parser.add_argument('--samples',
                         help='CSV file with list of IF images to download '
                              'in format of filename,if_plate_id,position,'
@@ -114,6 +123,40 @@ def _parse_arguments(desc, args):
                                  cellmaps_imagedownloader.__version__))
 
     return parser.parse_args(args)
+
+
+def _get_dataset_id(dataverse_api, dataverse_dataset):
+    response = requests.get(dataverse_api)
+    if response.status_code != 200:
+        raise CellMapsImageDownloaderError(f"Failed to fetch dataverse JSON. Status code: {response.status_code}")
+
+    dataset_json = response.json()
+
+    data_id = None
+
+    for file_entry in dataset_json["datasetVersion"]["files"]:
+        if file_entry["label"] == dataverse_dataset:
+            data_id = file_entry["dataFile"]["id"]
+            break
+
+    if data_id is None:
+        raise CellMapsImageDownloaderError(f"Dataset '{dataverse_dataset}' not found in the dataverse JSON response.")
+
+    return data_id
+
+
+def download_zip_file(data_id, outdir, dataverse_dataset):
+    download_url = f"https://dataverse.lib.virginia.edu/api/access/datafile/{data_id}"
+    zip_file_path = os.path.join(outdir, dataverse_dataset)
+
+    response = requests.get(download_url, stream=True)
+    if response.status_code == 200:
+        with open(zip_file_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                f.write(chunk)
+    else:
+        raise CellMapsImageDownloaderError(f"Failed to download file. Status code: {response.status_code}")
+    return zip_file_path
 
 
 def main(args):
@@ -219,10 +262,34 @@ Additional optional fields for registering datasets include
             json_prov = json.load(f)
 
         created_outdir = False
-        if theargs.cm4ai_table is None and theargs.samples is None:
-            if theargs.protein_list is None and theargs.cell_line is None:
-                raise CellMapsImageDownloaderError("Either protein list, cell line, samples or cm4ai table "
-                                                   "parameter should be specified.")
+        if all(arg is None for arg in [theargs.cm4ai_table, theargs.samples, theargs.protein_list, theargs.cell_line,
+                                       theargs.dataverse_doi]):
+            raise CellMapsImageDownloaderError("Either protein list, cell line, samples, cm4ai table, or "
+                                               "dataverse_doi parameter should be specified.")
+        if theargs.cm4ai_table is None and theargs.dataverse_doi:
+            if theargs.dataverse_dataset is None:
+                raise CellMapsImageDownloaderError("Name of dataset within the DOI must be specified.")
+            os.makedirs(theargs.outdir, mode=0o755)
+            created_outdir = True
+            doi_number = theargs.dataverse_doi.split(".org/")[
+                1] if '.org/' in theargs.dataverse_doi else theargs.dataverse_doi
+            dataverse_api = (f'https://dataverse.lib.virginia.edu/api/datasets/export?exporter=dataverse_json'
+                             f'&persistentId=doi%3A{doi_number}')
+
+            data_id = _get_dataset_id(dataverse_api, theargs.dataverse_dataset)
+            zip_file_path = download_zip_file(data_id, theargs.outdir, theargs.dataverse_dataset)
+
+            with zipfile.ZipFile(zip_file_path, "r") as zip_ref:
+                zip_ref.extractall(theargs.outdir)
+
+            dataset_dir = os.path.join(theargs.outdir, theargs.dataverse_dataset.replace(".zip", ""))
+            tsv_files = glob.glob(os.path.join(dataset_dir, "*.tsv"))
+            if len(tsv_files) == 1:
+                theargs.cm4ai_table = os.path.join(dataset_dir, os.path.basename(tsv_files[0]))
+            else:
+                raise FileNotFoundError("No .tsv file found or multiple .tsv files exist in the directory.")
+
+        elif theargs.samples is None and (theargs.protein_list is not None or theargs.cell_line is not None):
             hpa_processor = ProteinAtlasProcessor(theargs.outdir, theargs.proteinatlasxml, theargs.protein_list,
                                                   theargs.cell_line)
             theargs.samples, theargs.proteinatlasxml = hpa_processor.get_sample_list_from_hpa()
