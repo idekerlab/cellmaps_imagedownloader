@@ -246,20 +246,6 @@ Additional optional fields for registering datasets include
 
     try:
         logutils.setup_cmd_logging(theargs)
-        if theargs.provenance is None:
-            sys.stderr.write('\n\n--provenance flag is required to run this tool. '
-                             'Please pass '
-                             'a path to a JSON file with the following data:\n\n')
-            sys.stderr.write('If datasets are already registered with '
-                             'FAIRSCAPE then the following is sufficient:\n\n')
-            sys.stderr.write(withguids_json + '\n\n')
-            sys.stderr.write('If datasets are NOT registered, then the following is required:\n\n')
-            sys.stderr.write(register_json + '\n\n')
-            return 1
-
-        # load the provenance as a dict
-        with open(theargs.provenance, 'r') as f:
-            json_prov = json.load(f)
 
         created_outdir = False
         if all(arg is None for arg in [theargs.cm4ai_table, theargs.samples, theargs.protein_list, theargs.cell_line,
@@ -286,10 +272,27 @@ Additional optional fields for registering datasets include
             tsv_files = glob.glob(os.path.join(dataset_dir, "*.tsv"))
             if len(tsv_files) == 1:
                 theargs.cm4ai_table = os.path.join(dataset_dir, os.path.basename(tsv_files[0]))
+                theargs.provenance = os.path.join(dataset_dir, 'ro-crate-metadata.json')
             else:
                 raise FileNotFoundError("No .tsv file found or multiple .tsv files exist in the directory.")
 
-        elif theargs.samples is None and (theargs.protein_list is not None or theargs.cell_line is not None):
+        if theargs.provenance is None:
+            sys.stderr.write('\n\n--provenance flag is required to run this tool. '
+                             'Please pass '
+                             'a path to a JSON file with the following data:\n\n')
+            sys.stderr.write('If datasets are already registered with '
+                             'FAIRSCAPE then the following is sufficient:\n\n')
+            sys.stderr.write(withguids_json + '\n\n')
+            sys.stderr.write('If datasets are NOT registered, then the following is required:\n\n')
+            sys.stderr.write(register_json + '\n\n')
+            return 1
+
+        # load the provenance as a dict
+        with open(theargs.provenance, 'r') as f:
+            json_prov = json.load(f)
+
+        if theargs.cm4ai_table is None and theargs.samples is None and (theargs.protein_list is not None or
+                                                                        theargs.cell_line is not None):
             hpa_processor = ProteinAtlasProcessor(theargs.outdir, theargs.proteinatlasxml, theargs.protein_list,
                                                   theargs.cell_line)
             theargs.samples, theargs.proteinatlasxml = hpa_processor.get_sample_list_from_hpa()
