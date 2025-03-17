@@ -27,8 +27,8 @@ It is recommended to use conda environment with python 3.8+.
 From sources (option 2)
 -------------------------
 
-Alternatively, cellmaps_imagedownloader can be installed from sources. This way is specifically useful for developers.
-The sources for cellmaps_imagedownloader can be downloaded from the `Github repo`_.
+Alternatively, cellmaps_imagedownloader can be installed from sources, which is particularly useful for customization
+and development purposes. The sources for cellmaps_imagedownloader can be downloaded from the `Github repo`_.
 
 You can either clone the public repository:
 
