@@ -36,7 +36,7 @@ Dependencies
 Compatibility
 -------------
 
-* Python 3.8+
+* Python 3.8 - 3.11
 
 Installation
 ------------
@@ -51,6 +51,7 @@ Installation
 
    git clone https://github.com/idekerlab/cellmaps_imagedownloader
    cd cellmaps_imagedownloader
+   pip install -r requirements_dev.txt
    make dist
    pip install dist/cellmaps_imagedownloader*whl
 
@@ -82,7 +83,7 @@ Output:
    dockerbuild          build docker image and store in local repository
    dockerpush           push image to dockerhub
 
-Before running tests, please install ``pip install -r requirements_dev``.
+Before running tests, please install ``pip install -r requirements_dev.txt``.
 
 
 Needed files

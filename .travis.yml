@@ -17,7 +17,7 @@ install:
 
 # Command to run tests, e.g. python setup.py test
 script:
-    - coverage run --source cellmaps_imagedownloader -m unittest discover
+    - coverage run --source cellmaps_imagedownloader -m pytest
 
 after_success: coveralls
 
