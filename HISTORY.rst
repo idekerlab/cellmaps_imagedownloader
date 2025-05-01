@@ -2,8 +2,14 @@
 History
 =======
 
-0.2.2 (2025-04-30)
+0.3.0 (2025-XX-XX)
 -------------------
+
+* Updated to work with 0.6 release of CM4AI dataset by
+  supporting format in `manifest.csv`
+
+* Added `r` prefix to regex strings with escape sequences to remove
+  deprecation warnings that show up in python 3.11
 
 * Updated to PEP 517 compliant build system
 

@@ -91,7 +91,7 @@ class TestCM4AITableConverter(unittest.TestCase):
             self.assertEqual(['filename', 'if_plate_id', 'position',
                               'sample', 'locations',
                               'antibody', 'ensembl_ids', 'gene_names',
-                              'linkprefix'],df.columns.tolist())
+                              'linkprefix', 'z'],df.columns.tolist())
             self.assertEqual(4, len(df))
         finally:
             shutil.rmtree(temp_dir)
@@ -125,7 +125,7 @@ class TestCM4AITableConverter(unittest.TestCase):
             self.assertEqual(['filename', 'if_plate_id', 'position',
                               'sample', 'locations',
                               'antibody', 'ensembl_ids', 'gene_names',
-                              'linkprefix'],df.columns.tolist())
+                              'linkprefix', 'z'],df.columns.tolist())
             self.assertEqual(2, len(df))
         finally:
             shutil.rmtree(temp_dir)

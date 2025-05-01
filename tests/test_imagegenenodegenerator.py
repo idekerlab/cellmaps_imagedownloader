@@ -155,13 +155,13 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
         # Test case when csvfile has data
         csv_data = 'filename,if_plate_id,position,sample,' \
                    'status,locations,antibody,ensembl_ids,' \
-                   'gene_names\n/archive/1/1_A1_1_,1,A1,1,35,' \
+                   'gene_names,z\n/archive/1/1_A1_1_,1,A1,1,35,' \
                    'Golgi apparatus,HPA000992,ENSG00000066455,' \
-                   'GOLGA5\n/archive/1/1_A1_2_,1,A1,2,35,' \
+                   'GOLGA5,z01_\n/archive/1/1_A1_2_,1,A1,2,35,' \
                    'Golgi apparatus,HPA000992,ENSG00000066455,' \
-                   'GOLGA5\n/archive/1/1_A3_1_,1,A3,1,35,' \
+                   'GOLGA5,z01_\n/archive/1/1_A3_1_,1,A3,1,35,' \
                    'Cytosol,Nucleoplasm,HPA002899,' \
-                   'ENSG00000183092,BEGAIN\n'
+                   'ENSG00000183092,z01_\n'
         with patch('builtins.open', mock_open(read_data=csv_data)):
             result = ImageGeneNodeAttributeGenerator.get_samples_from_csvfile('test.csv')
             expected_result = [{'filename': '/archive/1/1_A1_1_',
@@ -170,21 +170,24 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
                                 'locations': 'Golgi apparatus',
                                 'antibody': 'HPA000992',
                                 'ensembl_ids': 'ENSG00000066455',
-                                'gene_names': 'GOLGA5'},
+                                'gene_names': 'GOLGA5',
+                                'z': 'z01_'},
                                {'filename': '/archive/1/1_A1_2_',
                                 'if_plate_id': '1', 'position': 'A1',
                                 'sample': '2',
                                 'locations': 'Golgi apparatus',
                                 'antibody': 'HPA000992',
                                 'ensembl_ids': 'ENSG00000066455',
-                                'gene_names': 'GOLGA5'},
+                                'gene_names': 'GOLGA5',
+                                'z': 'z01_'},
                                {'filename': '/archive/1/1_A3_1_',
                                 'if_plate_id': '1', 'position': 'A3',
                                 'sample': '1',
                                 'locations': 'Cytosol',
                                 'antibody': 'Nucleoplasm',
                                 'ensembl_ids': 'HPA002899',
-                                'gene_names': 'ENSG00000183092'}]
+                                'gene_names': 'ENSG00000183092',
+                                'z': 'z01_'}]
 
             self.assertEqual(result, expected_result)
 
@@ -497,7 +500,8 @@ class TestImageGeneNodeAttributeGenerator(unittest.TestCase):
                         'locations': 'Golgi apparatus',
                         'antibody': 'HPA000992',
                         'ensembl_ids': 'ENSG00000066455',
-                        'gene_names': 'GOLGA5'}]
+                        'gene_names': 'GOLGA5',
+                        'z': 'z03_'}]
             imagegen = ImageGeneNodeAttributeGenerator(genequery=mockgenequery,
                                                        samples_list=samples)
             imagegen.write_samples_to_csvfile(csvfile)

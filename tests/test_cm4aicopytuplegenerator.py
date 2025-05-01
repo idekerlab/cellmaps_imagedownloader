@@ -38,13 +38,15 @@ class TestCM4AIImageCopyTupleGenerator(unittest.TestCase):
                     'if_plate_id': '1832',
                     'position': 'C1',
                     'sample': '2',
-                    'linkprefix': 'xx/'},
+                    'linkprefix': 'xx/',
+                    'z': 'z01_'},
                    {'antibody': 'CAB0004109',
                     'filename': '1843_B2_17_',
                     'if_plate_id': '1843',
                     'position': 'B2',
                     'sample': '17',
-                    'linkprefix': 'yy/'}]
+                    'linkprefix': 'yy/',
+                    'z': 'z01_'}]
 
         reader = CM4AIImageCopyTupleGenerator(samples_list=samples)
         c_d_map = {'red': '/red', 'blue': '/blue',
@@ -74,5 +76,5 @@ class TestCM4AIImageCopyTupleGenerator(unittest.TestCase):
         self.assertTrue('4109/1843_B2_17_' in list(reader.get_sample_urlmap().keys()),
                         list(reader.get_sample_urlmap().keys()))
 
-        
+
 

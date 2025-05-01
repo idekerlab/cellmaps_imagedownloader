@@ -163,13 +163,15 @@ class CM4AITableConverter(object):
                          '_' + df['position'].astype(str) + '_' + \
                          df['sample'].astype(str) + '_'
 
+        df['z'] = 'z01_'
+
         # remove treatment
         df.drop('Treatment', axis=1, inplace=True)
 
         # reorder
         final_sample_df = df[['filename', 'if_plate_id', 'position',
                               'sample', 'locations', 'antibody', 'ensembl_ids',
-                              'gene_names', 'linkprefix']]
+                              'gene_names', 'linkprefix', 'z']]
 
         return final_sample_df
 
@@ -199,6 +201,7 @@ class CM4AITableConverter(object):
         df['linkprefix'] = os.path.dirname(self._cm4ai)
 
         df['filename'] = df['filename'].str.replace(r'^.*\/', '', regex=True)
+        df['z'] = df['filename'].str.replace(r'^.*z', 'z', regex=True)
         df['sample'] = df['filename'].str.replace(r'^.*R','R', regex=True)
         df['sample'] = df['sample'].str.replace(r'_.*','', regex=True)
 
@@ -223,7 +226,7 @@ class CM4AITableConverter(object):
         # reorder
         final_sample_df = df[['filename', 'if_plate_id', 'position',
                               'sample', 'locations', 'antibody', 'ensembl_ids',
-                              'gene_names', 'linkprefix']]
+                              'gene_names', 'linkprefix', 'z']]
 
         return final_sample_df
 
@@ -256,7 +259,7 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
     SAMPLES_HEADER_COLS = ['filename', 'if_plate_id',
                            'position', 'sample',
                            'locations', 'antibody',
-                           'ensembl_ids', 'gene_names']
+                           'ensembl_ids', 'gene_names', 'z']
     LINKPREFIX_HEADER = 'linkprefix'
     """
     Column labels for samples file
@@ -291,7 +294,8 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
              'locations': COMMA DELIMITED LOCATIONS,
              'antibody': ANTIBODY_ID,
              'ensembl_ids': COMMA DELIMITED ENSEMBLID IDS,
-             'gene_names': COMMA DELIMITED GENE SYMBOLS
+             'gene_names': COMMA DELIMITED GENE SYMBOLS,
+             'z': Z slice of image with _ at end ie z01_
             }
 
         **Example:**
@@ -477,7 +481,11 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
             for row in reader:
                 sample_entry = {}
                 for key in ImageGeneNodeAttributeGenerator.SAMPLES_HEADER_COLS:
-                    sample_entry[key] = row[key]
+                    if key not in row and key=='z':
+                        sample_entry[key] = 'z01_'
+                    else:
+                        sample_entry[key] = row[key]
+
                 if ImageGeneNodeAttributeGenerator.LINKPREFIX_HEADER in row:
                     sample_entry[ImageGeneNodeAttributeGenerator.LINKPREFIX_HEADER] = row[
                         ImageGeneNodeAttributeGenerator.LINKPREFIX_HEADER]

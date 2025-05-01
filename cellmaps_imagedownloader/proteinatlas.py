@@ -497,7 +497,9 @@ class CM4AIImageCopyTupleGenerator(object):
                        sample['filename']
 
             self._sample_urlmap[image_id] = os.path.join(sample['linkprefix'],
-                                                         sample['filename'] + 'z01_blue.jpg')
+                                                         sample['filename'] +
+                                                         sample['z'] +
+                                                         'blue.jpg')
 
         #logger.debug(self._sample_urlmap)
 
@@ -553,6 +555,7 @@ class CM4AIImageCopyTupleGenerator(object):
                  image_suffix) = self._get_image_prefix_suffix(sample_url)
                 basedir = os.path.dirname(image_url_prefix)
 
-                yield (os.path.join(basedir, c, image_filename + 'z01_' + c + image_suffix),
+                yield (os.path.join(basedir, c, image_filename + sample['z'] +
+                                    c + image_suffix),
                        os.path.join(color_download_map[c],
                                     image_filename + c + image_suffix))
