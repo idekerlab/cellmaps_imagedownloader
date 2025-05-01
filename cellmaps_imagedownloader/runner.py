@@ -127,6 +127,7 @@ class CM4AICopyDownloader(ImageDownloader):
                  unit='images')
         for entry in download_list:
             t.update()
+            logger.debug('Copying ' + str(entry[0]) + ' to ' + str(entry[1]))
             shutil.copy(entry[0], entry[1])
 
         return []
@@ -174,13 +175,13 @@ class FakeImageDownloader(ImageDownloader):
                 raise CellMapsImageDownloaderError('Unable to download ' +
                                                    str(entry))
             fname = os.path.basename(entry[1])
-            color = re.sub('\..*$', '', re.sub('^.*_', '', fname))
+            color = re.sub(r'\..*$', '', re.sub(r'^.*_', '', fname))
             src_image_dict[color] = entry[1]
 
         for entry in download_list[5:]:
             t.update()
             fname = os.path.basename(entry[1])
-            color = re.sub('\..*$', '', re.sub('^.*_', '', fname))
+            color = re.sub(r'\..*$', '', re.sub(r'^.*_', '', fname))
             shutil.copy(src_image_dict[color], entry[1])
         return []
 

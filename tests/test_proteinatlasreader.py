@@ -159,7 +159,7 @@ class TestProteinAtlasReader(unittest.TestCase):
                 reader = ProteinAtlasReader(outdir=temp_dir, proteinatlas=p_url)
                 with self.assertRaises(CellMapsImageDownloaderError):
                     for line in reader._readline(reader._proteinatlas, retry_wait=1):
-                        yield line
+                        pass
         finally:
             shutil.rmtree(temp_dir)
         self.assertEqual(mock_get.call_count, 3)

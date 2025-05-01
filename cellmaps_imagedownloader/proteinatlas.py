@@ -499,7 +499,7 @@ class CM4AIImageCopyTupleGenerator(object):
             self._sample_urlmap[image_id] = os.path.join(sample['linkprefix'],
                                                          sample['filename'] + 'z01_blue.jpg')
 
-        logger.debug(self._sample_urlmap)
+        #logger.debug(self._sample_urlmap)
 
     def get_sample_urlmap(self):
         """

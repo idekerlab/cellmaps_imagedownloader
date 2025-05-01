@@ -65,12 +65,13 @@ For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
 
 **Example usage**
 
-The example file can be downloaded from `cm4ai.org <https://cm4ai.org>`__. Go to **Products -> Data**, log in, and download file for IF images with the desired treatment,
-then unpack the tar.gz (``tar -xzvf filename.tar.gz``).
+An example file can be downloaded from `cm4ai.org <https://cm4ai.org>`__. Go to **Products -> Data Releases**, and
+choose **CM4AI 0.5 Alpha Data Release** and download **Zip Archive** of **cm4ai_chromatin_mda-mb-468_paclitaxel_ifimage_0.1_alpha**
+
 
 .. code-block::
 
-   cellmaps_imagedownloadercmd.py ./cellmaps_imagedownloader_outdir  --cm4ai_table path/to/downloaded/unpacked/dir --provenance examples/provenance.json
+   cellmaps_imagedownloadercmd.py ./cellmaps_imagedownloader_outdir  --cm4ai_table path/to/downloaded/unpacked/dir/<TSV file> --provenance examples/provenance.json
 
 
 Alternatively, use the files in the example directory in the repository:

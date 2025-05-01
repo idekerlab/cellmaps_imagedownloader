@@ -109,7 +109,10 @@ class CM4AITableConverter(object):
         """
         if self._cm4ai is not None and os.path.isfile(self._cm4ai):
             # assume we have a table file
-            samples_df = self._get_samples_from_cm4ai_table_as_dataframe(self._cm4ai)
+            if self._cm4ai.endswith('.csv'):
+                samples_df = self._get_samples_from_cm4ai_table_as_dataframe_from_updatedversion(self._cm4ai)
+            else:
+                samples_df = self._get_samples_from_cm4ai_table_as_dataframe(self._cm4ai)
             unique_df = self._get_unique_dataframe_from_samples_dataframe(samples_df=samples_df)
             return (samples_df.to_dict(orient='records'),
                     unique_df.to_dict(orient='records'))
@@ -131,6 +134,7 @@ class CM4AITableConverter(object):
         unique_df = unique_df[['antibody', 'ensembl_ids', 'gene_names',
                                'atlas_name', 'locations', 'n_location']]
         return unique_df
+
 
     def _get_samples_from_cm4ai_table_as_dataframe(self, table=None):
         """
@@ -161,6 +165,60 @@ class CM4AITableConverter(object):
 
         # remove treatment
         df.drop('Treatment', axis=1, inplace=True)
+
+        # reorder
+        final_sample_df = df[['filename', 'if_plate_id', 'position',
+                              'sample', 'locations', 'antibody', 'ensembl_ids',
+                              'gene_names', 'linkprefix']]
+
+        return final_sample_df
+
+    def _get_samples_from_cm4ai_table_as_dataframe_from_updatedversion(self, table=None):
+        """
+
+        :param table:
+        :return:
+        """
+        df = pd.read_csv(table)
+
+        # drop 1st column if its unnamed
+        if df.columns[0] == 'Unnamed: 0':
+            logger.debug('First column is unlabeled so drop it since it is just'
+                         'the index')
+            df.drop('Unnamed: 0', axis=1, inplace=True)
+
+        # rename main columns
+        df.rename(columns={'HPA_Antibody_ID': 'antibody',
+                           'Well': 'position',
+                           'Baselink': 'filename',
+                           'ENSEMBL ID': 'ensembl_ids'}, inplace=True)
+
+        # add locations column and genes column
+        df['locations'] = ''
+        df['gene_names'] = ''
+        df['linkprefix'] = os.path.dirname(self._cm4ai)
+
+        df['filename'] = df['filename'].str.replace(r'^.*\/', '', regex=True)
+        df['sample'] = df['filename'].str.replace(r'^.*R','R', regex=True)
+        df['sample'] = df['sample'].str.replace(r'_.*','', regex=True)
+
+        # for if_plate_id use prefix B2AI_1_<treatment>
+        df['if_plate_id'] = ('B2AI_' + df['Plate'].astype(str) + '_' +
+                             df['Treatment'].astype(str))
+        # for filename use prefix B2AI_<treatment>_position_sample_
+        df['filename'] = df['if_plate_id'].astype(str) + \
+                         '_' + df['position'].astype(str) + '_' + \
+                         df['sample'].astype(str) + '_'
+
+        # remove treatment
+        df.drop('Treatment', axis=1, inplace=True)
+
+        # remove Plate
+        df.drop('Plate', axis=1, inplace=True)
+
+
+        # remove the negative controls
+        df = df[df["antibody"].str.contains("NEGATIVE") == False]
 
         # reorder
         final_sample_df = df[['filename', 'if_plate_id', 'position',
@@ -523,9 +581,9 @@ class ImageGeneNodeAttributeGenerator(GeneNodeAttributeGenerator):
                 logger.info('Skipping because row has nan: ' + str(row))
                 continue
             if ';' in geneid:
-                split_str = re.split('\W*;\W*', geneid)
+                split_str = re.split(r'\W*;\W*', geneid)
             else:
-                split_str = re.split('\W*,\W*', geneid)
+                split_str = re.split(r'\W*,\W*', geneid)
             id_set.update(split_str)
 
         return list(id_set)
