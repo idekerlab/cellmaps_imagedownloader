@@ -1,20 +1,19 @@
-=====
 Usage
 =====
 
 This script facilitates the downloading of ImmunoFluorescent (IF) labeled images from the `Human Protein Atlas`_ (HPA).
-The tool requires an output directory to write results to and either a TSV_ file in CM4AI_ RO-Crate_ format,
+The tool requires an output directory to write results to and either a TSV_ or CSV_ file in CM4AI_ RO-Crate_ format,
 or CSV_ file with list of IF images to download and CSV_ file of unique samples.
 
 In a project
---------------
+*************
 
 To use cellmaps_imagedownloader in a project::
 
     import cellmaps_imagedownloader
 
 On the command line
----------------------
+*********************
 
 For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
 
@@ -47,7 +46,7 @@ For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
     Cell line for which HPA images will be downloaded. See available cell lines at https://www.proteinatlas.org/humanproteome/cell+line.
 
 - ``--cm4ai_table CM4AI_TABLE_PATH``
-    Path to TSV file in CM4AI RO-Crate directory.
+    Path to TSV or CSV file in CM4AI RO-Crate directory.
 
 *Optional*
 
@@ -63,16 +62,9 @@ For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
 - ``--verbose``, ``-v``: Increases verbosity of logger to standard error for log messages.
 - ``--version``: Shows the current version of the tool.
 
-**Example usage**
 
-An example file can be downloaded from `cm4ai.org <https://cm4ai.org>`__. Go to **Products -> Data Releases**, and
-choose **CM4AI 0.5 Alpha Data Release** and download **Zip Archive** of **cm4ai_chromatin_mda-mb-468_paclitaxel_ifimage_0.1_alpha**
-
-
-.. code-block::
-
-   cellmaps_imagedownloadercmd.py ./cellmaps_imagedownloader_outdir  --cm4ai_table path/to/downloaded/unpacked/dir/<TSV file> --provenance examples/provenance.json
-
+Example usage
+--------------
 
 Alternatively, use the files in the example directory in the repository:
 
@@ -83,6 +75,93 @@ Alternatively, use the files in the example directory in the repository:
 .. code-block::
 
    cellmaps_imagedownloadercmd.py ./cellmaps_imagedownloader_outdir  --samples examples/samples.csv --unique examples/unique.csv --provenance examples/provenance.json
+
+Example usage using CM4AI 0.5 Alpha Data Release
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+#. Visit `cm4ai.org <https://cm4ai.org>`__ and go to **Products -> Data Releases**
+
+#. Scroll down and click **CM4AI 0.5 Alpha Data Release** link (circled in red)
+
+    .. image:: images/datarelease_0.5link.png
+        :alt: Link to CM4AI 0.5 data release circled in red
+
+#. On the newly opened page/tab, scroll down to the **cm4ai_chromatin_mda-mb-468_paclitaxel_ifimage_0.1_alpha** entry
+   and click the download icon (circled in red) to bring up a pop up dialog. Click **Zip Archive** (red arrow)
+   to accept the usage agreement and download the dataset
+
+    .. image:: images/0.5imagedownload_paclitaxel.png
+        :alt: CM4AI 0.5 paclitaxel image zip download link circled in red
+
+    .. note::
+
+        For **vorinostat** dataset, look for **cm4ai_chromatin_mda-mb-468_vorinostat_ifimage_0.1_alpha.zip** entry and perform the same
+        operations above.
+
+    .. note::
+
+        For **untreated** dataset, this tool was already run and its results can be found in **1.cm4ai_chromatin_mda-mb-468_untreated_imageloader_initialrun0.1alpha.zip** entry
+
+#. Unzip file
+
+    This can be done by double clicking on the file or if on a Mac/Linux machine by running the following
+    on a command line:
+
+    .. code-block::
+
+        unzip cm4ai_chromatin_mda-mb-468_paclitaxel_ifimage_0.1_alpha.zip
+
+
+#. Running cellmaps_imagedownloader command
+
+    .. code-block::
+
+        # Be sure to unzip the zip file above before running this step
+        cellmaps_imagedownloadercmd.py ./paclitaxel_image  \
+            --cm4ai_table cm4ai_chromatin_mda-mb-468_paclitaxel_ifimage_0.1_alpha/MDA-MB-468_paclitaxel_antibody_gene_table.tsv  \
+            --provenance examples/provenance.json
+
+
+Example usage February 2025 Data Release (Beta)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+#. Visit `cm4ai.org <https://cm4ai.org>`__ and go to **Products -> Data Releases**
+
+#. Scroll down and click **February 2025 Data Release (Beta)** link (circled in red)
+
+    .. image:: images/datarelease_0.6link.png
+        :alt: Link to CM4AI February 2025 data release circled in red
+
+#. On the newly opened page/tab, scroll down to the **cm4ai-v0.6-beta-if-images-paclitaxel.zip** entry
+   and click the download icon (circled in red) to bring up a pop up dialog. Click **Zip Archive** (red arrow) to
+   accept the usage agreement and download the dataset
+
+    .. image:: images/0.6imagedownload_paclitaxel.png
+        :alt: CM4AI February 2025 data release paclitaxel circled in red
+
+    .. note::
+
+        For **vorinostat** dataset, look for **cm4ai-v0.6-beta-if-images-vorinostat.zip** entry and perform the same
+        operations above. Same goes for untreated, look for **cm4ai-v0.6-beta-if-images-untreated.zip**
+
+#. Unzip file
+
+    This can be done by double clicking on the file or if on a Mac/Linux machine by running the following
+    on a command line:
+
+    .. code-block::
+
+        unzip cm4ai-v0.6-beta-if-images-paclitaxel.zip
+
+
+#. Running cellmaps_imagedownloader command
+
+    .. code-block::
+
+        # Be sure to unzip the zip file above before running this step
+        cellmaps_imagedownloadercmd.py ./paclitaxel_image  \
+            --cm4ai_table paclitaxel/manifest.csv  \
+            --provenance examples/provenance.json
 
 Via Docker
 ---------------
