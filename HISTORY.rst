@@ -2,7 +2,7 @@
 History
 =======
 
-0.3.0 (2025-XX-XX)
+0.3.0 (2025-05-02)
 -------------------
 
 * Updated to work with 0.6 release of CM4AI dataset by
