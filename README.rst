@@ -19,6 +19,7 @@ The Cell Maps Image Downloader is part of the Cell Mapping Toolkit
 
 
 Downloads ImmunoFluorescent image data from `Human Protein Atlas <https://www.proteinatlas.org/>`__
+or from a `CM4AI RO-Crate <https://cm4ai.org>`__
 
 
 * Free software: MIT license
