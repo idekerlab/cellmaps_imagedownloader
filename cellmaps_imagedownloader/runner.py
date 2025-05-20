@@ -304,18 +304,75 @@ class CellmapsImageDownloader(object):
         :type imagedownloader: :py:class:`~cellmaps_downloader.runner.ImageDownloader`
         :param imagegen: gene node attribute generator for IF image data
         :type imagegen: :py:class:`~cellmaps_imagedownloader.gene.ImageGeneNodeAttributeGenerator`
-        :param image_url: Base URL for image download from Human Protein Atlas
-        :type image_url: str
+        :param imageurlgen: URL generator to get URL to download images for given samples
+        :type imageurlgen: :py:class:`~CM4AIImageCopyTupleGenerator`,
+                           :py:class:`~ImageDownloadTupleGenerator` or
+                           :py:class:`~LinkPrefixImageDownloadTupleGenerator`
         :param skip_logging: If ``True`` skip logging, if ``None`` or ``False`` do NOT skip logging
         :type skip_logging: bool
-        :param provenance:
+        :param provenance: Path to file containing provenance information about input files in JSON format. It should
+                           include fields like: name, organisation-name, project-name, and other data related info e.g.
+                           cell-line, treatment, release, gene-set.
+
+                           Example:
+
+                           .. code-block:: python
+
+                               {
+                                  "name": "Example input dataset",
+                                  "organization-name": "CM4AI",
+                                  "project-name": "Example",
+                                  "edgelist": {
+                                    "name": "sample edgelist",
+                                    "author": "Krogan Lab",
+                                    "version": "1.0",
+                                    "date-published": "07-31-2023",
+                                    "description": "AP-MS Protein interactions on HSC2 cell line, example dataset",
+                                    "data-format": "tsv"
+                                  },
+                                  "baitlist": {
+                                    "name": "sample baitlist",
+                                    "author": "Krogan Lab",
+                                    "version": "1.0",
+                                    "date-published": "07-31-2023",
+                                    "description": "AP-MS Baits used for Protein interactions on HSC2 cell line",
+                                    "data-format": "tsv"
+                                  },
+                                  "samples": {
+                                    "name": "u2os HPA IF images",
+                                    "author": "Author of dataset",
+                                    "version": "Version of dataset",
+                                    "date-published": "Date dataset was published",
+                                    "description": "Description of dataset",
+                                    "data-format": "csv"
+                                  },
+                                  "unique": {
+                                    "name": "u2os HPA IF images unique",
+                                    "author": "Author of dataset",
+                                    "version": "Version of dataset",
+                                    "date-published": "Date dataset was published",
+                                    "description": "Description of dataset",
+                                    "data-format": "csv"
+                                  }
+                                }
         :type provenance: dict
-        :param input_data_dict:
+        :param input_data_dict: All attributes and their corresponding values of the input data e.g.
+
+                                .. code-block:: python
+
+                                    {'outdir': 'test', 'samples': 'path/to/file/with/samples'}
         :type input_data_dict: dict
         :param provenance_utils: Wrapper for `fairscape-cli <https://pypi.org/project/fairscape-cli>`__
                                  which is used for
                                  `RO-Crate <https://www.researchobject.org/ro-crate>`__ creation and population
         :type provenance_utils: :py:class:`~cellmaps_utils.provenance.ProvenanceUtil`
+        :param skip_failed: If ``True`` allow partial downloads, if ``None`` or ``False`` it will throw exception if
+                            some image has not been downloaded.
+        :type skip_failed: bool
+        :param existing_outdir: If ``True`` will not create an output directory but save results in specified existing
+                                output directory, if ``None`` or ``False`` new output directory will be created in the
+                                path specified in ``outdir`` param.
+        :type existing_outdir: bool
         """
         if outdir is None:
             raise CellMapsImageDownloaderError('outdir is None')
