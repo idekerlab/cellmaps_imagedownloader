@@ -310,9 +310,9 @@ class CellmapsImageDownloader(object):
                            :py:class:`~LinkPrefixImageDownloadTupleGenerator`
         :param skip_logging: If ``True`` skip logging, if ``None`` or ``False`` do NOT skip logging
         :type skip_logging: bool
-        :param provenance: Path to file containing provenance information about input files in JSON format. It should
-                           include fields like: name, organisation-name, project-name, and other data related info e.g.
-                           cell-line, treatment, release, gene-set.
+        :param provenance: Provenance information about input files in JSON format. It should include fields like:
+                           name, organisation-name, project-name, and other data related info e.g. cell-line,
+                           treatment, release, gene-set.
 
                            Example:
 
