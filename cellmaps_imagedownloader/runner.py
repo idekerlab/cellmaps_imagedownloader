@@ -310,7 +310,7 @@ class CellmapsImageDownloader(object):
                            :py:class:`~LinkPrefixImageDownloadTupleGenerator`
         :param skip_logging: If ``True`` skip logging, if ``None`` or ``False`` do NOT skip logging
         :type skip_logging: bool
-        :param provenance: Provenance information about input files in JSON format. It should include fields like:
+        :param provenance: Provenance information about input files as dictionary. It should include fields like:
                            name, organisation-name, project-name, and other data related info e.g. cell-line,
                            treatment, release, gene-set.
 
@@ -318,42 +318,18 @@ class CellmapsImageDownloader(object):
 
                            .. code-block:: python
 
-                               {
-                                  "name": "Example input dataset",
-                                  "organization-name": "CM4AI",
-                                  "project-name": "Example",
-                                  "edgelist": {
-                                    "name": "sample edgelist",
-                                    "author": "Krogan Lab",
-                                    "version": "1.0",
-                                    "date-published": "07-31-2023",
-                                    "description": "AP-MS Protein interactions on HSC2 cell line, example dataset",
-                                    "data-format": "tsv"
-                                  },
-                                  "baitlist": {
-                                    "name": "sample baitlist",
-                                    "author": "Krogan Lab",
-                                    "version": "1.0",
-                                    "date-published": "07-31-2023",
-                                    "description": "AP-MS Baits used for Protein interactions on HSC2 cell line",
-                                    "data-format": "tsv"
-                                  },
-                                  "samples": {
-                                    "name": "u2os HPA IF images",
-                                    "author": "Author of dataset",
-                                    "version": "Version of dataset",
-                                    "date-published": "Date dataset was published",
-                                    "description": "Description of dataset",
-                                    "data-format": "csv"
-                                  },
-                                  "unique": {
-                                    "name": "u2os HPA IF images unique",
-                                    "author": "Author of dataset",
-                                    "version": "Version of dataset",
-                                    "date-published": "Date dataset was published",
-                                    "description": "Description of dataset",
-                                    "data-format": "csv"
-                                  }
+                                {
+                                    'name': 'Example input dataset',
+                                    'organization-name': 'CM4AI',
+                                    'project-name': 'Example',
+                                    'samples': {
+                                        'name': 'u2os HPA IF images',
+                                        'author': 'Author of dataset',
+                                        'version': 'Version of dataset',
+                                        'date-published': 'Date dataset was published',
+                                        'description': 'Description of dataset',
+                                        'data-format': 'csv'
+                                    }
                                 }
         :type provenance: dict
         :param input_data_dict: All attributes and their corresponding values of the input data e.g.
