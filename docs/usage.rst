@@ -36,17 +36,23 @@ For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
 *Optional but either `samples`, `cm4ai_table`, `protein_list` or `cell_line` parameter is required*
 
 - ``--samples SAMPLES_PATH``
-    CSV file with list of IF images to download. The file follow a specific format with columns such as
-    filename, if_plate_id, position, sample, locations, antibody, ensembl_ids, and gene_names.
+    CSV file with list of IF images to download. The file must include the columns
+    ``filename, if_plate_id, position, sample, locations, antibody, ensembl_ids, gene_names, z`` and may include an optional
+    ``linkprefix`` column when reusing CM4AI assets. Leaving out ``z`` results in every entry defaulting to ``z01_``.
 
 - ``--protein_list``
-    List of proteins for which HPA images will be downloaded. Each protein in new line.
+    Path to a plaintext file listing one gene symbol per line. The file is used to limit what is pulled from the
+    Human Protein Atlas when neither ``--samples`` nor ``--cm4ai_table`` is supplied.
 
 - ``--cell_line``
-    Cell line for which HPA images will be downloaded. See available cell lines at https://www.proteinatlas.org/humanproteome/cell+line.
+    Cell line for which HPA images will be downloaded (default ``U2OS``). Values are compared in upper case; refer to
+    https://www.proteinatlas.org/humanproteome/cell+line for the supported names.
 
 - ``--cm4ai_table CM4AI_TABLE_PATH``
-    Path to TSV or CSV file in CM4AI RO-Crate directory.
+    Path to TSV or CSV file in CM4AI RO-Crate directory. Legacy antibody tables shipped with the 0.5 alpha release use a TSV
+    schema (``Antibody ID``, ``ENSEMBL ID``, ``Treatment``, ``Well``, ``Region``). Starting with the February 2025 beta release,
+    the tool also accepts the ``manifest.csv`` format that contains ``HPA_Antibody_ID``, ``Baselink``, ``Treatment``, ``Plate``,
+    ``Well``, and ``Region`` columns.
 
 *Optional*
 
@@ -74,7 +80,15 @@ Alternatively, use the files in the example directory in the repository:
 
 .. code-block::
 
-   cellmaps_imagedownloadercmd.py ./cellmaps_imagedownloader_outdir  --samples examples/samples.csv --unique examples/unique.csv --provenance examples/provenance.json
+   cellmaps_imagedownloadercmd.py ./cellmaps_imagedownloader_outdir  --samples examples/samples.csv --provenance examples/provenance.json
+
+Automatic HPA download
+^^^^^^^^^^^^^^^^^^^^^^
+
+If neither ``--samples`` nor ``--cm4ai_table`` is provided, the command will fall back to generating ``samples.csv`` from
+the Human Protein Atlas. During that step it downloads ``proteinatlas.xml.gz`` into the output directory, filters entries by
+``--protein_list`` (when supplied) and ``--cell_line``, and then continues with the regular pipeline. Always pass either
+``--samples`` or ``--cm4ai_table`` when you already have curated input data to avoid this additional download.
 
 Example usage using CM4AI 0.5 Alpha Data Release
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -178,5 +192,4 @@ Via Docker
 .. _TSV: https://en.wikipedia.org/wiki/Tab-separated_values
 .. _Human Protein Atlas: https://www.proteinatlas.org
 .. _CM4AI: https://cm4ai.org
-
 
