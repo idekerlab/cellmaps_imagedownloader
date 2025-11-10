@@ -91,7 +91,7 @@ Needed files
 ------------
 
 * samples file: CSV file with list of IF images to download (see sample samples file in examples folder)
-* unique file: CSV file of unique samples (see sample unique file in examples folder)
+* unique file *(optional/deprecated)*: CSV file of unique samples (see sample unique file in examples folder)
 * provenance: file containing provenance information about input files in JSON format (see sample provenance file in examples folder)
 
 Usage
@@ -104,7 +104,21 @@ For information invoke :code:`cellmaps_imagedownloadercmd.py -h`
 
 .. code-block::
 
-    cellmaps_imagedownloadercmd.py ./cellmaps_imagedownloader_outdir  --samples examples/samples.csv --unique examples/unique.csv --provenance examples/provenance.json
+    cellmaps_imagedownloadercmd.py ./cellmaps_imagedownloader_outdir  --samples examples/samples.csv --provenance examples/provenance.json
+
+Outputs
+-------
+
+Every run writes the following artifacts to the output directory:
+
+* ``blue``, ``red``, ``green``, ``yellow`` – directories containing downloaded images in different color spectrum.
+* ``proteinatlas.xml.gz`` – a gzipped XML file containing information fetched from the `Human Protein Atlas`_. This file is only present when
+  the automatic HPA workflow was executed.
+* ``ro-crate-metadata.json`` – metadata in RO-Crate_ format, a community effort to establish a lightweight approach to packaging research data with their metadata.
+* ``samples.csv`` or ``samplescopy.csv`` – copy of the provided samples file or one generated from the Human Protein Atlas fallback or from the CM4AI table.
+* ``README.txt`` – human-readable summary of the tool version and output structure.
+* ``task_<timestamp>_start.json`` / ``task_<timestamp>_finish.json`` – provenance records emitted by :mod:`cellmaps_utils.logutils`.
+* Optional files such as ``unique.csv``/``uniquecopy.csv`` only appear when ``--unique`` or ``--cm4ai_table`` arguments were provided.
 
 
 Via Docker
