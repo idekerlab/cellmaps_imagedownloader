@@ -1,15 +1,25 @@
-# Use an official Python runtime as a parent image
-FROM continuumio/miniconda3
+# ---- build stage ----
+FROM python:3.9-slim AS build
 
-RUN apt-get --allow-releaseinfo-change update
-RUN apt-get install -y build-essential 
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+  && rm -rf /var/lib/apt/lists/*
 
-RUN mkdir /tmp/cellmaps_imagedownloader
-COPY ./ /tmp/cellmaps_imagedownloader/
-RUN pip install /tmp/cellmaps_imagedownloader
+WORKDIR /src
+COPY . /src
 
-RUN rm -rf /tmp/cellmaps_imagedownloader
+# build wheels for your package + deps
+RUN pip install --no-cache-dir --upgrade pip wheel \
+ && pip wheel --no-cache-dir --wheel-dir /wheels .
 
-ENTRYPOINT ["/opt/conda/bin/cellmaps_imagedownloadercmd.py"]
+# ---- runtime stage ----
+FROM python:3.9-slim
 
+COPY --from=build /wheels /wheels
+RUN pip install --no-cache-dir /wheels/* \
+ && rm -rf /wheels
+
+# the package exposes a CLI users run as `cellmaps_coembeddingcmd.py -h`
+ENTRYPOINT ["cellmaps_imagedownloadercmd.py"]
 CMD ["--help"]
+
