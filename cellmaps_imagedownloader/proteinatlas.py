@@ -131,8 +131,9 @@ class ProteinAtlasProcessor(object):
                 data_points = image_data.findall('.//data')
                 for dp in data_points:
                     cellline = dp.find('cellLine').text
-                    if self._cell_line and cellline.upper() != self._cell_line:
-                        continue
+                    if self._cell_line != 'ALL':
+                        if self._cell_line and cellline.upper() != self._cell_line:
+                            continue
                     locations = [location.text for location in dp.findall('.//location')]
                     image_urls = [image.find('imageUrl').text for image in dp.findall('.//image') if
                                   'blue' in image.find('imageUrl').text]

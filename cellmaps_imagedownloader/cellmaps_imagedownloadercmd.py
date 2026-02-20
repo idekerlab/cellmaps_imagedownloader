@@ -66,7 +66,7 @@ def _parse_arguments(desc, args):
     parser.add_argument('--protein_list', help='List of proteins for which HPA images will be downloaded')
     parser.add_argument('--cell_line',
                         help='Cell line for which HPA images will be downloaded. See available cell lines at '
-                             'https://www.proteinatlas.org/humanproteome/cell+line.', default='U2OS')
+                             'https://www.proteinatlas.org/humanproteome/cell+line. For all cell lines, set to ALL', default='U2OS')
     parser.add_argument('--provenance',
                         help='Path to file containing provenance '
                              'information about input files in JSON format. '
